@@ -10,7 +10,16 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+use App\Models\Video;
+use Inertia\Inertia;
+
+Route::get('/', function () {
+    $videos = Video::latest()->take(6)->get();
+    return Inertia::render('Welcome', [
+        'videos' => $videos,
+        'appName' => config('app.name', 'EduConnect')
+    ]);
+})->name('home');
 
 // Auth Routes
 Route::prefix('auth')->group(function () {

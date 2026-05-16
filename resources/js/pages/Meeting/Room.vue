@@ -113,8 +113,7 @@ const toggleLobby = () => {
     }
 };
 const leaveRoom = () => {
-    // If the user clicks hang up or network disconnects, 
-    // do not redirect them. Let them see the "Rejoin" screen from Jitsi.
+    router.visit('/auth/login');
 };
 
 onMounted(() => {
@@ -169,7 +168,7 @@ onUnmounted(() => {
         <!-- Jitsi IFrame Container -->
         <main class="flex-1 bg-black relative">
             <!-- Overlay to hide Jitsi Watermark COMPLETELY -->
-            <div class="absolute top-0 left-0 w-48 h-16 bg-slate-950 z-50 flex items-center px-4 pointer-events-none select-none border-b border-r border-white/5">
+            <!-- <div class="absolute top-0 left-0 w-48 h-16 bg-slate-950 z-50 flex items-center px-4 pointer-events-none select-none border-b border-r border-white/5">
                 <div class="flex items-center gap-3">
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
                     <div>
@@ -177,7 +176,7 @@ onUnmounted(() => {
                         <span class="block text-[7px] text-slate-500 uppercase tracking-widest font-medium">Youth In Tech • Encrypted</span>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <div ref="jitsiContainer" class="absolute inset-0 w-full h-full"></div>
 
