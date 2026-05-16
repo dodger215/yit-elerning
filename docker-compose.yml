@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: yit_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      # - db
+      - redis
+    networks:
+      - yit-network
+
+  # db:
+  #   image: mysql:8.0
+  #   container_name: yit_db
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - yit-db-data:/var/lib/mysql
+  #   networks:
+  #     - yit-network
+
+  redis:
+    image: redis:alpine
+    container_name: yit_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - yit-network
+
+networks:
+  yit-network:
+    driver: bridge
+
+volumes:
+  yit-db-data:
+    driver: local
