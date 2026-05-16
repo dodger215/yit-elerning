@@ -48,14 +48,13 @@ class UserController extends Controller
         $this->authorize('user.manage');
 
         $request->validate([
-            'roles' => 'required|array',
-            'roles.*' => 'exists:roles,name',
+            'role' => 'required|string|exists:roles,name',
         ]);
 
-        $roleIds = Role::whereIn('name', $request->roles)->pluck('id');
-        $user->roles()->sync($roleIds);
+        $role = Role::where('name', $request->role)->firstOrFail();
+        $user->roles()->sync([$role->id]);
 
-        return back()->with('success', 'User roles updated successfully.');
+        return back()->with('success', 'User role updated successfully.');
     }
 
     /**

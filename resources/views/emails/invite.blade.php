@@ -77,7 +77,7 @@
             <p>You have been invited to join the <strong>Youth In Tech</strong> platform as a <strong>{{ ucfirst($role) }}</strong>.</p>
             <p>Click the button below to accept your invitation and set up your account. You will need to authenticate using your Google account.</p>
             <div class="cta-container">
-                <a href="{{ $url }}" class="btn">Accept Invitation</a>
+                <a href="{{ $url }}" class="btn" style="color: #ffffff;">Accept Invitation</a>
             </div>
             <p>This invitation will expire in 7 days.</p>
             <p>Best regards,<br>The Youth In Tech Team</p>

@@ -43,12 +43,12 @@ const submitInvite = () => {
 const showRoleModal = ref(false);
 const selectedUser = ref<any>(null);
 const roleForm = useForm({
-    roles: [] as string[]
+    role: '' as string
 });
 
 const openRoleModal = (user: any) => {
     selectedUser.value = user;
-    roleForm.roles = user.roles.map((r: any) => r.name);
+    roleForm.role = user.roles?.[0]?.name ?? '';
     showRoleModal.value = true;
 };
 
@@ -210,29 +210,35 @@ const deleteUser = (user: any) => {
         </Modal>
 
         <!-- Manage Roles Modal -->
-        <Modal :show="showRoleModal" :title="`Manage Roles: ${selectedUser?.first_name}`" @close="showRoleModal = false">
+        <Modal :show="showRoleModal" :title="`Manage Role: ${selectedUser?.first_name}`" @close="showRoleModal = false">
             <div class="space-y-4">
-                <p class="text-xs text-slate-400 mb-4">Select the roles to assign to this user. They will gain all associated permissions immediately.</p>
+                <p class="text-xs text-slate-400 mb-4">Select a single role to assign to this user. Their access level will update immediately.</p>
                 
                 <div class="space-y-2">
-                    <button v-for="role in roles" :key="role.id"
-                            @click="roleForm.roles.includes(role.name) ? roleForm.roles = roleForm.roles.filter(r => r !== role.name) : roleForm.roles.push(role.name)"
+                    <button v-for="role in roles.filter(r => r.name !== 'regular')" :key="role.id"
+                            @click="roleForm.role = role.name"
                             class="w-full flex items-center justify-between p-3 rounded-2xl border transition-all"
-                            :class="roleForm.roles.includes(role.name) ? 'bg-blue-600/10 border-blue-500/50 text-white' : 'bg-white/5 border-white/10 text-slate-500 hover:bg-white/10'">
+                            :class="roleForm.role === role.name
+                                ? 'bg-blue-600/10 border-blue-500/50 text-white'
+                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white'"
+                    >
                         <div class="flex items-center gap-3">
-                            <Shield class="w-4 h-4" :class="roleForm.roles.includes(role.name) ? 'text-blue-400' : 'text-slate-600'" />
+                            <Shield class="w-4 h-4" :class="roleForm.role === role.name ? 'text-blue-400' : 'text-slate-600'" />
                             <span class="text-xs font-bold uppercase tracking-widest">{{ role.name }}</span>
                         </div>
-                        <div v-if="roleForm.roles.includes(role.name)" class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                            <Check class="w-3 h-3 text-white" />
+                        <!-- Radio indicator -->
+                        <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all"
+                             :class="roleForm.role === role.name ? 'border-blue-500 bg-blue-500' : 'border-slate-600'"
+                        >
+                            <div v-if="roleForm.role === role.name" class="w-1.5 h-1.5 rounded-full bg-white"></div>
                         </div>
                     </button>
                 </div>
 
                 <div class="pt-4 flex gap-3">
                     <button type="button" @click="showRoleModal = false" class="flex-1 px-4 py-2 bg-white/5 text-slate-300 font-bold rounded-xl text-sm hover:bg-white/10 transition-all">Cancel</button>
-                    <button @click="submitRoles" :disabled="roleForm.processing" class="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-500 transition-all disabled:opacity-50">
-                        {{ roleForm.processing ? 'Saving...' : 'Update Roles' }}
+                    <button @click="submitRoles" :disabled="roleForm.processing || !roleForm.role" class="flex-1 px-4 py-2 bg-blue-600 text-white font-bold rounded-xl text-sm hover:bg-blue-500 transition-all disabled:opacity-50">
+                        {{ roleForm.processing ? 'Saving...' : 'Update Role' }}
                     </button>
                 </div>
             </div>

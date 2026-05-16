@@ -18,7 +18,8 @@ RUN apk add --no-cache \
     sqlite-dev \
     linux-headers \
     nodejs \
-    npm
+    npm \
+    ffmpeg
 
 # Install PHP extensions
 RUN docker-php-ext-install \
@@ -30,6 +31,10 @@ RUN docker-php-ext-install \
     zip \
     mbstring \
     opcache
+
+# Configure PHP upload limits
+RUN echo "upload_max_filesize = 500M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size = 500M" >> /usr/local/etc/php/conf.d/uploads.ini
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

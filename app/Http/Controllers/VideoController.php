@@ -32,9 +32,11 @@ class VideoController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'video_file' => 'nullable|file|mimes:mp4,mov,avi|max:102400', // 100MB
+            'video_file' => 'nullable|file|mimes:mp4,mov,avi',
             'video_url' => 'nullable|url',
             'category_id' => 'nullable|exists:video_categories,id',
+            'video_type' => 'required|in:short,long',
+            'duration' => 'nullable|integer',
         ]);
 
         $video = $this->videoService->storeVideo($validated, $request->file('video_file'));

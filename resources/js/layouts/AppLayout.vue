@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { usePage, Link } from '@inertiajs/vue3';
+import { usePage, Link, router } from '@inertiajs/vue3';
 import { 
     LayoutDashboard, 
     Users, 
@@ -32,15 +32,40 @@ const page = usePage();
 const navigation = computed(() => page.props.navigation as any[]);
 const user = computed(() => page.props.auth.user as any);
 const activePublicMeetings = computed(() => (page.props.auth as any).active_public_meetings as any[]);
+const activeRole = computed(() => page.props.auth.active_role as string);
+const userRoles = computed<string[]>(() => {
+    const roles = (page.props.auth.user as any)?.roles;
+    if (!roles) return [];
+    // Roles come as a plain array of strings from the backend
+    return Array.isArray(roles) ? roles : [];
+});
 
 const isSidebarOpen = ref(true);
 const isMobileMenuOpen = ref(false);
 const dismissPopup = ref(false);
+const isRoleMenuOpen = ref(false);
+const isSwitchingRole = ref(false);
 
 const activeMeeting = computed(() => {
     if (dismissPopup.value || !activePublicMeetings.value?.length) return null;
     return activePublicMeetings.value[0];
 });
+
+const switchRole = (roleName: string) => {
+    if (roleName === activeRole.value || isSwitchingRole.value) return;
+    isSwitchingRole.value = true;
+    isRoleMenuOpen.value = false;
+    router.post(route('auth.role.select'), { role: roleName }, {
+        onFinish: () => { isSwitchingRole.value = false; }
+    });
+};
+
+const roleColors: Record<string, string> = {
+    supervisor: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
+    instructor: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    editor: 'text-green-400 bg-green-500/10 border-green-500/20',
+    student: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+};
 
 const icons: Record<string, any> = {
     LayoutDashboard, Users, GraduationCap, ShieldCheck, Video, 
@@ -147,7 +172,66 @@ const toggleSidebar = () => isSidebarOpen.value = !isSidebarOpen.value;
                     </div>
                 </div>
 
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <!-- Role Switcher -->
+                    <div v-if="userRoles.length > 1" class="relative">
+                        <!-- Backdrop to close dropdown -->
+                        <div v-if="isRoleMenuOpen" @click="isRoleMenuOpen = false" class="fixed inset-0 z-[55]"></div>
+
+                        <button
+                            @click.stop="isRoleMenuOpen = !isRoleMenuOpen"
+                            class="relative z-[56] flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all text-xs font-black uppercase tracking-widest"
+                            :class="roleColors[activeRole] ?? 'text-slate-400 bg-white/5 border-white/10'"
+                        >
+                            <ShieldCheck class="w-3.5 h-3.5" />
+                            <span class="hidden sm:block">{{ activeRole }}</span>
+                            <ChevronDown class="w-3 h-3 transition-transform" :class="isRoleMenuOpen ? 'rotate-180' : ''" />
+                        </button>
+
+                        <!-- Dropdown -->
+                        <Transition
+                            enter-active-class="transition duration-150 ease-out"
+                            enter-from-class="opacity-0 scale-95 -translate-y-1"
+                            enter-to-class="opacity-100 scale-100 translate-y-0"
+                            leave-active-class="transition duration-100 ease-in"
+                            leave-from-class="opacity-100 scale-100 translate-y-0"
+                            leave-to-class="opacity-0 scale-95 -translate-y-1"
+                        >
+                            <div
+                                v-if="isRoleMenuOpen"
+                                class="absolute right-0 top-full mt-2 w-48 bg-[#0d1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-[60]"
+                            >
+                                <div class="p-2 border-b border-white/5">
+                                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] px-2 py-1">Switch Role</p>
+                                </div>
+                                <div class="p-2 space-y-1">
+                                    <button
+                                        v-for="roleName in userRoles"
+                                        :key="roleName"
+                                        @click="switchRole(roleName)"
+                                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left border"
+                                        :class="roleName === activeRole
+                                            ? (roleColors[roleName] ?? 'bg-blue-500/10 text-blue-400 border-blue-500/20')
+                                            : 'text-slate-300 hover:bg-white/5 hover:text-white border-transparent'"
+                                    >
+                                        <ShieldCheck class="w-4 h-4 shrink-0 text-current" />
+                                        <span class="text-xs font-bold capitalize text-current">{{ roleName }}</span>
+                                        <span v-if="roleName === activeRole" class="ml-auto text-[8px] font-black uppercase tracking-widest opacity-70">Active</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </Transition>
+                    </div>
+
+                    <!-- Single role badge (no switcher needed) -->
+                    <div v-else class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-black uppercase tracking-widest"
+                         :class="roleColors[activeRole] ?? 'text-slate-400 bg-white/5 border-white/10'">
+                        <ShieldCheck class="w-3.5 h-3.5" />
+                        {{ activeRole }}
+                    </div>
+
+                    <div class="h-6 w-px bg-white/10 hidden sm:block"></div>
+
                     <button class="relative p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors">
                         <Bell class="w-5 h-5" />
                         <span class="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#0a0c10]"></span>

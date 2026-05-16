@@ -29,8 +29,32 @@ const uploadForm = useForm({
     title: '',
     description: '',
     video_file: null as File | null,
+    video_type: 'long',
+    duration: 0,
     category_id: null
 });
+
+const handleVideoFile = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
+    
+    const file = target.files[0];
+    uploadForm.video_file = file;
+
+    // Auto-detect if short or long video based on duration
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration < 60) {
+            uploadForm.video_type = 'short';
+        } else {
+            uploadForm.video_type = 'long';
+        }
+        uploadForm.duration = Math.floor(video.duration);
+    };
+    video.src = URL.createObjectURL(file);
+};
 
 const submitUpload = () => {
     uploadForm.post(route('videos.store'), {
@@ -110,7 +134,7 @@ const deleteVideo = (video: any) => {
                                     <img v-if="item.thumbnail_url" :src="item.thumbnail_url" class="w-full h-full object-cover">
                                     <Play v-else class="w-5 h-5 group-hover:scale-110 transition-transform" />
                                     <div class="absolute bottom-1 right-1 px-1 bg-black/60 rounded text-[8px] font-bold text-white">
-                                        {{ Math.floor(item.duration_seconds / 60) }}:{{ (item.duration_seconds % 60).toString().padStart(2, '0') }}
+                                        {{ item.duration ? Math.floor(item.duration / 60) + ':' + (item.duration % 60).toString().padStart(2, '0') : '0:00' }}
                                     </div>
                                 </div>
                                 <div class="min-w-0">
@@ -124,8 +148,8 @@ const deleteVideo = (video: any) => {
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-col gap-1">
-                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{{ (item.size_bytes / 1024 / 1024).toFixed(1) }} MB</span>
-                                <span class="text-[10px] text-blue-500 font-black">{{ item.mime_type }}</span>
+                                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-tight">{{ item.file_size ? (item.file_size / 1024 / 1024).toFixed(1) : '0.0' }} MB</span>
+                                <span class="text-[10px] text-blue-500 font-black uppercase">{{ item.video_type }}</span>
                             </div>
                         </td>
                         <td class="px-6 py-4">
@@ -174,14 +198,14 @@ const deleteVideo = (video: any) => {
                 <div>
                     <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">File Upload</label>
                     <div class="border-2 border-dashed border-white/10 rounded-2xl p-8 text-center hover:border-blue-500/30 transition-all cursor-pointer relative overflow-hidden group">
-                        <input type="file" @input="uploadForm.video_file = $event.target.files[0]"
+                        <input type="file" @change="handleVideoFile" accept="video/mp4,video/quicktime,video/x-msvideo"
                                class="absolute inset-0 opacity-0 cursor-pointer z-10">
                         <div class="relative z-0">
                             <Upload class="w-8 h-8 mx-auto mb-2 text-slate-500 group-hover:text-blue-500 transition-colors" />
                             <p class="text-sm font-bold text-slate-300">
                                 {{ uploadForm.video_file ? uploadForm.video_file.name : 'Select video file to upload' }}
                             </p>
-                            <p class="text-[10px] text-slate-500 mt-1 font-medium">MP4, MOV or AVI (Max 100MB)</p>
+                            <p class="text-[10px] text-slate-500 mt-1 font-medium">MP4, MOV or AVI (Max 500MB)</p>
                         </div>
                     </div>
                     <div v-if="uploadForm.progress" class="mt-4">
@@ -193,6 +217,23 @@ const deleteVideo = (video: any) => {
                             <div class="h-full bg-blue-600 transition-all" :style="{ width: `${uploadForm.progress.percentage}%` }"></div>
                         </div>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Video Type</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" @click="uploadForm.video_type = 'long'"
+                                :class="uploadForm.video_type === 'long' ? 'bg-blue-600 text-white border-blue-500' : 'bg-white/5 text-slate-400 border-white/10'"
+                                class="px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all">
+                            Long Video (Standard)
+                        </button>
+                        <button type="button" @click="uploadForm.video_type = 'short'"
+                                :class="uploadForm.video_type === 'short' ? 'bg-blue-600 text-white border-blue-500' : 'bg-white/5 text-slate-400 border-white/10'"
+                                class="px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all">
+                            Short Video (&lt; 60s)
+                        </button>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-1">This will be auto-detected when you select a video, but you can override it.</p>
                 </div>
 
                 <div>

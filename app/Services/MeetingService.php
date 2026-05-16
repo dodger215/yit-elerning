@@ -20,7 +20,7 @@ class MeetingService
             'description' => $data['description'] ?? null,
             'meeting_type' => $data['meeting_type'],
             'start_time' => $data['start_time'],
-            'end_time' => isset($data['start_time']) ? \Carbon\Carbon::parse($data['start_time'])->addHour() : null,
+            'end_time' => null,
             'room_id' => Str::slug($data['title']).'-'.Str::random(8),
             'host_user_id' => $user->id,
             'course_id' => $data['course_id'] ?? null,

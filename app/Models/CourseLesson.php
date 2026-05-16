@@ -17,6 +17,7 @@ class CourseLesson extends Model
         'video_id',
         'title',
         'description',
+        'content',
         'lesson_type',
         'lesson_order',
         'duration_minutes',

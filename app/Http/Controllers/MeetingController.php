@@ -57,7 +57,7 @@ class MeetingController extends Controller
             'description' => $validated['description'],
             'meeting_type' => $validated['meeting_type'],
             'start_time' => $validated['start_time'],
-            'end_time' => \Carbon\Carbon::parse($validated['start_time'])->addHour(),
+            'end_time' => null,
         ]);
 
         return redirect()->route('meetings.index')->with('success', 'Meeting updated successfully!');

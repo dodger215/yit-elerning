@@ -13,20 +13,27 @@ class VideoService
      */
     public function storeVideo(array $data, $file = null): Video
     {
-        $videoPath = $file ? $file->store('videos', 'public') : ($data['video_url'] ?? null);
+        $videoPath = $file ? $file->store('temp_videos', 'public') : ($data['video_url'] ?? null);
 
-        return Video::create([
+        $video = Video::create([
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'video_url' => $videoPath,
-            'thumbnail_url' => $data['thumbnail_url'] ?? null,
-            'duration_seconds' => $data['duration_seconds'] ?? 0,
-            'size_bytes' => $file ? $file->getSize() : 0,
-            'mime_type' => $file ? $file->getMimeType() : 'video/mp4',
-            'status' => $data['status'] ?? 'processing',
+            'duration' => $data['duration'] ?? 0,
+            'file_size' => $file ? $file->getSize() : 0,
+            'status' => 'processing',
+            'video_type' => $data['video_type'] ?? 'long',
             'uploader_id' => auth()->id(),
             'category_id' => $data['category_id'] ?? null,
         ]);
+
+        if ($file) {
+            \App\Jobs\ProcessVideoConversion::dispatch($video, $videoPath);
+        } else {
+            $video->update(['status' => 'active']);
+        }
+
+        return $video;
     }
 
     /**

@@ -20,7 +20,7 @@ const loadJitsiScript = () => {
             return;
         }
         const script = document.createElement('script');
-        script.src = 'https://meet.jit.si/external_api.js';
+        script.src = 'https://jitsi.riot.im/external_api.js';
         script.async = true;
         script.onload = resolve;
         script.onerror = reject;
@@ -31,8 +31,8 @@ const loadJitsiScript = () => {
 const initJitsi = async () => {
     try {
         await loadJitsiScript();
-        
-        const domain = 'meet.jit.si';
+
+        const domain = 'jitsi.riot.im';
         const options = {
             roomName: props.meeting.room_id,
             width: '100%',
@@ -66,7 +66,7 @@ const initJitsi = async () => {
                     'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
                     'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
                     'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
-                    'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
+                    'videoquality', 'filmstrip', 'feedback', 'stats', 'shortcuts',
                     'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
                     'security'
                 ],
@@ -112,12 +112,9 @@ const toggleLobby = () => {
         api.value.executeCommand('toggleLobby', isLobbyEnabled.value);
     }
 };
-
 const leaveRoom = () => {
-    if (api.value) {
-        api.value.dispose();
-    }
-    router.visit((window as any).route('dashboard'));
+    // If the user clicks hang up or network disconnects, 
+    // do not redirect them. Let them see the "Rejoin" screen from Jitsi.
 };
 
 onMounted(() => {
@@ -146,7 +143,7 @@ onUnmounted(() => {
                     </p>
                 </div>
             </div>
-            
+
             <!-- Host Panel (Floating inline or here) -->
             <div v-if="isHost" class="hidden md:flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg border border-white/5">
                 <button @click="muteEveryone" title="Mute Everyone" class="p-1.5 hover:bg-slate-700 rounded transition-colors text-slate-300">
@@ -183,7 +180,7 @@ onUnmounted(() => {
             </div>
 
             <div ref="jitsiContainer" class="absolute inset-0 w-full h-full"></div>
-            
+
             <!-- Loading State Overlay -->
             <div v-if="!api" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 z-0">
                 <div class="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\LessonProgress;
+use App\Models\Video;
 use App\Services\CourseService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,8 +19,9 @@ class CourseController extends Controller
     public function index()
     {
         $courses = Course::with('instructor')->paginate(12);
+
         return Inertia::render('Courses/Index', [
-            'courses' => $courses
+            'courses' => $courses,
         ]);
     }
 
@@ -51,15 +54,22 @@ class CourseController extends Controller
         $course->load(['instructor', 'sections.lessons.video']);
         $user = auth()->user();
 
+        $enrollment = $user ? $user->enrollments()->where('course_id', $course->id)->first() : null;
+        $lessonIds = $course->sections->flatMap(fn ($s) => $s->lessons->pluck('id'));
+
         $data = [
             'course' => $course,
-            'isEnrolled' => $user ? $user->enrollments()->where('course_id', $course->id)->exists() : false,
-            'progress' => $user ? $user->lessonProgress()->whereIn('lesson_id', $course->lessons()->pluck('lessons.id'))->get() : [],
+            'isEnrolled' => $enrollment !== null,
+            'progress' => $enrollment
+                ? LessonProgress::where('enrollment_id', $enrollment->id)
+                    ->whereIn('lesson_id', $lessonIds)
+                    ->get()
+                : [],
         ];
 
         // If instructor/editor, provide videos for selection
         if ($user && ($user->hasRole('instructor') || $user->hasRole('editor') || $user->hasRole('supervisor'))) {
-            $data['availableVideos'] = \App\Models\Video::select('id', 'title')->get();
+            $data['availableVideos'] = Video::select('id', 'title')->get();
         }
 
         return Inertia::render('Courses/Show', $data);
@@ -105,7 +115,7 @@ class CourseController extends Controller
 
         $enrolled = $this->courseService->enrollStudent($course, auth()->user());
 
-        if (!$enrolled) {
+        if (! $enrolled) {
             return back()->with('error', 'You are already enrolled in this course.');
         }
 

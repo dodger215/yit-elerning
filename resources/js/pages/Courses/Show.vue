@@ -16,7 +16,8 @@ import {
     Settings,
     User,
     Video,
-    BarChart3
+    BarChart3,
+    FileEdit
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -42,7 +43,7 @@ const sectionForm = useForm({
 });
 
 const submitSection = () => {
-    sectionForm.post(route('admin.courses.sections.store', props.course.id), {
+    sectionForm.post(route('courses.sections.store', props.course.id), {
         onSuccess: () => {
             showSectionModal.value = false;
             sectionForm.reset();
@@ -64,7 +65,7 @@ const openLessonModal = (section: any) => {
 };
 
 const submitLesson = () => {
-    lessonForm.post(route('admin.courses.lessons.store', selectedSection.value.id), {
+    lessonForm.post(route('sections.lessons.store', selectedSection.value.id), {
         onSuccess: () => {
             showLessonModal.value = false;
             lessonForm.reset();
@@ -153,11 +154,18 @@ const isLessonCompleted = (lessonId: number) => {
                                         </div>
                                     </div>
 
-                                    <button v-if="isEnrolled || isInstructorOfCourse || lesson.is_preview" 
-                                            class="p-2 bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all opacity-0 group-hover:opacity-100">
-                                        <ChevronRight class="w-4 h-4" />
-                                    </button>
-                                    <Lock v-else class="w-4 h-4 text-slate-700" />
+                                    <div class="flex items-center gap-2">
+                                        <Link v-if="isInstructorOfCourse" :href="route('lessons.content.edit', lesson.id)"
+                                              class="p-2 bg-white/5 rounded-lg text-slate-500 hover:text-blue-500 hover:bg-blue-600/10 transition-all opacity-0 group-hover:opacity-100"
+                                              title="Edit Lesson Content">
+                                            <FileEdit class="w-4 h-4" />
+                                        </Link>
+                                        <button v-if="isEnrolled || isInstructorOfCourse || lesson.is_preview" 
+                                                class="p-2 bg-white/5 rounded-lg text-slate-500 hover:text-white transition-all opacity-0 group-hover:opacity-100">
+                                            <ChevronRight class="w-4 h-4" />
+                                        </button>
+                                        <Lock v-else class="w-4 h-4 text-slate-700" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

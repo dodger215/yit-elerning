@@ -87,6 +87,7 @@ class CourseService
         return $section->lessons()->create([
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
+            'lesson_type' => !empty($data['video_id']) ? 'video' : 'article',
             'video_id' => $data['video_id'] ?? null,
             'is_preview' => $data['is_preview'] ?? false,
             'lesson_order' => $section->lessons()->count() + 1,

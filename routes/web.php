@@ -90,6 +90,11 @@ Route::middleware(['auth'])->group(function () {
     // Course Content Management
     Route::post('/courses/{course}/sections', [CourseContentController::class, 'addSection'])->name('courses.sections.store');
     Route::post('/sections/{section}/lessons', [CourseContentController::class, 'addLesson'])->name('sections.lessons.store');
+    
+    // Lesson Content Editor
+    Route::get('/lessons/{lesson}/content', [CourseContentController::class, 'editLessonContent'])->name('lessons.content.edit');
+    Route::put('/lessons/{lesson}/content', [CourseContentController::class, 'updateLessonContent'])->name('lessons.content.update');
+    Route::post('/lessons/extract-text', [CourseContentController::class, 'extractTextFromDocument'])->name('lessons.content.extract');
 
     // Video Routes
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
