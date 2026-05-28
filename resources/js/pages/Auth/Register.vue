@@ -3,7 +3,6 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { 
     User, 
     Mail, 
-    UserPlus, 
     ArrowRight, 
     AtSign,
     Loader2
@@ -36,8 +35,8 @@ const submit = () => {
         <div class="w-full max-w-md relative z-10">
             <!-- Brand -->
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/5">
-                    <UserPlus class="w-8 h-8 text-blue-500" />
+                <div class="flex items-center justify-center mb-4">
+                    <img src="/images/logo.png" alt="Youth In Tech" class="w-20 h-20 object-contain drop-shadow-2xl rounded-lg" />
                 </div>
                 <h1 class="text-3xl font-black text-white tracking-tight">Join YIT Learning</h1>
                 <p class="text-slate-500 font-medium mt-1">Start your learning journey today.</p>

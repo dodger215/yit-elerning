@@ -44,9 +44,9 @@ const getRoleColor = (roleName: string) => {
         <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px]"></div>
 
         <div class="w-full max-w-2xl relative z-10">
-            <div class="text-center mb-12">
-                <div class="w-16 h-16 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/5">
-                    <Fingerprint class="w-8 h-8 text-blue-500" />
+        <div class="text-center mb-12">
+                <div class="flex items-center justify-center mb-4">
+                    <img src="/images/logo.png" alt="Youth In Tech" class="w-20 h-20 object-contain drop-shadow-2xl" />
                 </div>
                 <h1 class="text-4xl font-black text-white tracking-tight">Choose Your Workspace</h1>
                 <p class="text-slate-500 font-medium mt-2 text-lg">You have multiple roles assigned. Select one to proceed.</p>

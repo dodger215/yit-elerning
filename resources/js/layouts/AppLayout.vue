@@ -91,10 +91,10 @@ const toggleSidebar = () => isSidebarOpen.value = !isSidebarOpen.value;
         ]">
             <div class="flex flex-col h-full">
                 <!-- Logo -->
-                <div class="flex items-center h-16 px-6 border-b border-white/5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">Y</div>
-                        <span v-if="isSidebarOpen" class="font-bold text-lg tracking-tight text-white">YIT <span class="text-blue-500">Learning</span></span>
+                <div class="flex items-center h-16 px-4 border-b border-white/5">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <img src="/images/logo.png" alt="Youth In Tech" class="w-9 h-9 shrink-0 object-contain" />
+                        <span v-if="isSidebarOpen" class="font-black text-base tracking-tight text-white whitespace-nowrap">Youth In <span class="text-blue-400">Tech</span></span>
                     </div>
                 </div>
 

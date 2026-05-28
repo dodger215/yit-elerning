@@ -5,7 +5,6 @@ import {
     Mail, 
     Lock,
     ArrowRight, 
-    Fingerprint,
     ShieldCheck,
     Loader2
 } from 'lucide-vue-next';
@@ -46,11 +45,11 @@ const verifyOtp = () => {
         <div class="w-full max-w-md relative z-10">
             <!-- Brand -->
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-blue-500/5">
-                    <Fingerprint class="w-8 h-8 text-blue-500" />
+                <div class="flex items-center justify-center mb-4">
+                    <img src="/images/logo.png" alt="Youth In Tech" class="w-20 h-20 object-contain drop-shadow-2xl rounded-lg" />
                 </div>
                 <h1 class="text-3xl font-black text-white tracking-tight">Welcome Back</h1>
-                <p class="text-slate-500 font-medium mt-1">Access your YIT Learning workspace.</p>
+                <p class="text-slate-500 font-medium mt-1">Access your <span class="text-blue-400 font-bold">YIT Learning</span> workspace.</p>
             </div>
 
             <div class="bg-[#0d1117] border border-white/10 rounded-[2.5rem] p-8 shadow-2xl shadow-black/40">

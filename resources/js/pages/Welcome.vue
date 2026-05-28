@@ -38,9 +38,7 @@ onUnmounted(() => {
         <!-- Logo section -->
         <div class="nav-logo">
           <Link href="/" class="logo-link">
-            <div class="logo-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-            </div>
+            <img src="/images/logo.png" alt="Youth In Tech" class="logo-img" />
             <span class="logo-text">{{ appName }}</span>
           </Link>
         </div>
@@ -297,20 +295,10 @@ onUnmounted(() => {
   text-decoration: none;
 }
 
-.logo-icon {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.logo-icon svg {
-  width: 20px;
-  height: 20px;
+.logo-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 .logo-text {
