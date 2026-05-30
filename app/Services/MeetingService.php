@@ -25,6 +25,7 @@ class MeetingService
             'host_user_id' => $user->id,
             'course_id' => $data['course_id'] ?? null,
             'status' => 'scheduled',
+            'recording_enabled' => $data['recording_enabled'] ?? false,
         ]);
 
         // Role-based notifications for Board meetings

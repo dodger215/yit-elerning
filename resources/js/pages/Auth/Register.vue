@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import PageLoader from '@/Components/PageLoader.vue';
 import { 
     User, 
     Mail, 
@@ -26,6 +27,7 @@ const submit = () => {
 
 <template>
     <Head title="Create Account" />
+    <PageLoader />
     
     <div class="min-h-screen bg-[#0a0c10] flex items-center justify-center p-6 relative overflow-hidden">
         <!-- Background Glows -->

@@ -69,12 +69,12 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ config('app.url') }}/images/logo.png" alt="Youth In Tech Logo">
+            <img src="{{ $message->embed(public_path('images/logo.png')) }}" alt="Youth In Tech Logo">
         </div>
         <div class="content">
             <h1>You're Invited!</h1>
             <p>Hello,</p>
-            <p>You have been invited to join the <strong>Youth In Tech</strong> platform as a <strong>{{ ucfirst($role) }}</strong>.</p>
+            <p>You have been invited to join the <strong>YouthInTech</strong> platform as a <strong>{{ ucfirst($role) }}</strong>.</p>
             <p>Click the button below to accept your invitation and set up your account. You will need to authenticate using your Google account.</p>
             <div class="cta-container">
                 <a href="{{ $url }}" class="btn" style="color: #ffffff;">Accept Invitation</a>

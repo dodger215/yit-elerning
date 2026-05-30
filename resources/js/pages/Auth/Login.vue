@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import PageLoader from '@/Components/PageLoader.vue';
 import { 
     Mail, 
     Lock,
@@ -36,6 +37,7 @@ const verifyOtp = () => {
 
 <template>
     <Head title="Login" />
+    <PageLoader />
     
     <div class="min-h-screen bg-[#0a0c10] flex items-center justify-center p-6 relative overflow-hidden">
         <!-- Background Glows -->

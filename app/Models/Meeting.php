@@ -35,6 +35,7 @@ class Meeting extends Model
         'status',
         'course_id',
         'lesson_id',
+        'guest_emails',
     ];
 
     protected $casts = [
@@ -48,6 +49,7 @@ class Meeting extends Model
         'recording_enabled' => 'boolean',
         'chat_enabled' => 'boolean',
         'screen_sharing_enabled' => 'boolean',
+        'guest_emails' => 'array',
     ];
 
     public function host(): BelongsTo

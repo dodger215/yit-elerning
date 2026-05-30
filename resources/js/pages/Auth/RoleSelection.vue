@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import PageLoader from '@/Components/PageLoader.vue';
 import { 
     Shield, 
     GraduationCap, 
@@ -37,6 +38,7 @@ const getRoleColor = (roleName: string) => {
 
 <template>
     <Head title="Select Workspace" />
+    <PageLoader />
     
     <div class="min-h-screen bg-[#0a0c10] flex items-center justify-center p-6 relative overflow-hidden">
         <!-- Background Glows -->

@@ -66,7 +66,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ config('app.url') }}/images/logo.png" alt="Youth In Tech Logo">
+            <img src="{{ $message->embed(public_path('images/logo.png')) }}" alt="Youth In Tech Logo">
         </div>
         <div class="content">
             <h1>Verification Code</h1>

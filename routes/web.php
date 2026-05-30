@@ -43,6 +43,8 @@ Route::prefix('auth')->group(function () {
 
 // Hybrid Routes (Public or Auth)
 Route::get('/meeting/{room_id}', [\App\Http\Controllers\MeetingController::class, 'join'])->name('meeting.join');
+Route::get('/meeting/{room_id}/ended', [\App\Http\Controllers\MeetingController::class, 'ended'])->name('meeting.ended');
+Route::get('/meetings/recordings/{file}', [\App\Http\Controllers\MeetingController::class, 'downloadRecording'])->name('meetings.download-recording');
 
 // Protected Routes
 Route::middleware(['auth'])->group(function () {
@@ -50,8 +52,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Meetings Routes
     Route::get('/meetings', [\App\Http\Controllers\MeetingController::class, 'index'])->name('meetings.index');
+    Route::get('/meetings/recordings', [\App\Http\Controllers\MeetingController::class, 'recordings'])->name('meetings.recordings');
     Route::post('/meetings', [\App\Http\Controllers\MeetingController::class, 'store'])->name('meetings.store');
     Route::patch('/meetings/{meeting}', [\App\Http\Controllers\MeetingController::class, 'update'])->name('meetings.update');
+    Route::delete('/meetings/{meeting}', [\App\Http\Controllers\MeetingController::class, 'destroy'])->name('meetings.destroy');
+    Route::post('/meetings/{meeting}/upload-recording', [\App\Http\Controllers\MeetingController::class, 'uploadRecording'])->name('meetings.upload-recording');
+    Route::post('/meetings/{meeting}/resend-invites', [\App\Http\Controllers\MeetingController::class, 'resendInvites'])->name('meetings.resend-invites');
 
     // Profile & Settings
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
@@ -65,6 +71,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:supervisor'])->group(function () {
         Route::get('/admin/invites', [InviteController::class, 'index'])->name('admin.invites.index');
         Route::post('/invite', [InviteController::class, 'sendInvite'])->name('admin.invite');
+        Route::get('/invite', fn () => redirect()->route('admin.invites.index'))->name('admin.invite.redirect');
         
         // User Management
         Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');

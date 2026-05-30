@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Head, Link, usePage, useForm } from '@inertiajs/vue3';
+import { Head, Link, usePage, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Card from '@/components/Card.vue';
 import Modal from '@/components/Modal.vue';
@@ -15,8 +15,11 @@ import {
     Check,
     ShieldCheck,
     Edit3,
+    Trash2,
     Globe,
-    Briefcase
+    Briefcase,
+    Download,
+    Mail
 } from 'lucide-vue-next';
 
 defineProps<{
@@ -26,6 +29,11 @@ defineProps<{
 const page = usePage();
 const activeRole = computed(() => page.props.auth.active_role as string);
 const isSupervisor = computed(() => activeRole.value === 'supervisor');
+const authUser = computed(() => page.props.auth.user as any);
+
+const isHostOrSupervisor = (meeting: any) => {
+    return isSupervisor.value || authUser.value.id === meeting.host_user_id;
+};
 
 // Meeting Form
 const showBoardModal = ref(false);
@@ -35,7 +43,9 @@ const boardForm = useForm({
     description: '',
     meeting_type: 'board',
     start_time: '',
-    roles: ['instructor', 'editor'] as string[]
+    roles: ['instructor', 'editor'] as string[],
+    recording_enabled: false,
+    guest_emails: '',
 });
 
 const handleEdit = (meeting: any) => {
@@ -43,6 +53,8 @@ const handleEdit = (meeting: any) => {
     boardForm.title = meeting.title;
     boardForm.description = meeting.description;
     boardForm.meeting_type = meeting.meeting_type;
+    boardForm.recording_enabled = !!meeting.recording_enabled;
+    boardForm.guest_emails = meeting.guest_emails ? meeting.guest_emails.join(', ') : '';
     // Format date for datetime-local input
     const date = new Date(meeting.start_time);
     const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -55,6 +67,24 @@ const openCreateModal = () => {
     boardForm.reset();
     boardForm.id = null;
     showBoardModal.value = true;
+};
+
+const setToday = () => {
+    const date = new Date();
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    boardForm.start_time = localDate;
+};
+
+const handleDelete = (meeting: any) => {
+    if (confirm('Are you sure you want to delete this meeting?')) {
+        router.delete(route('meetings.destroy', meeting.id));
+    }
+};
+
+const handleResendInvites = (meeting: any) => {
+    if (confirm('Are you sure you want to resend email invites to all saved guests?')) {
+        router.post(route('meetings.resend-invites', meeting.id), {}, { preserveScroll: true });
+    }
 };
 
 const submitBoardMeeting = () => {
@@ -158,9 +188,26 @@ const toggleRole = (role: string) => {
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <button v-if="isSupervisor" @click="handleEdit(meeting)" 
-                                    class="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all active:scale-95">
+                            <button v-if="isHostOrSupervisor(meeting) && meeting.meeting_type === 'public' && meeting.guest_emails && meeting.guest_emails.length > 0" 
+                                    @click="handleResendInvites(meeting)" 
+                                    class="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl transition-all active:scale-95" title="Resend Invites">
+                                <Mail class="w-4 h-4" />
+                            </button>
+                            <button v-if="isHostOrSupervisor(meeting)" @click="handleEdit(meeting)" 
+                                    class="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all active:scale-95" title="Edit Meeting">
                                 <Edit3 class="w-4 h-4" />
+                            </button>
+                            <button v-if="isHostOrSupervisor(meeting)" @click="handleDelete(meeting)" 
+                                    class="p-2.5 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-xl transition-all active:scale-95" title="Delete Meeting">
+                                <Trash2 class="w-4 h-4" />
+                            </button>
+                            <a v-if="meeting.recording_url && activeRole !== 'regular'" :href="meeting.recording_url + '?download=1'"
+                                    class="flex items-center gap-2 px-4 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl font-bold text-xs transition-all active:scale-95" title="Download Recording">
+                                <Download class="w-4 h-4" />
+                            </a>
+                            <button v-if="meeting.meeting_type === 'public'" @click="() => { navigator.clipboard.writeText(route('meeting.join', meeting.room_id)); alert('Link copied!'); }"
+                                    class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-bold text-xs transition-all active:scale-95" title="Copy Share Link">
+                                <Globe class="w-4 h-4" />
                             </button>
                             <Link :href="route('meeting.join', meeting.room_id)" 
                                   class="flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl font-black text-xs transition-all active:scale-95">
@@ -179,6 +226,13 @@ const toggleRole = (role: string) => {
                 <p class="text-slate-500 text-sm mt-2 max-w-xs mx-auto">You don't have any upcoming meetings scheduled at the moment.</p>
             </div>
         </div>
+
+        <!-- Floating Action Button for Recordings -->
+        <Link :href="route('meetings.recordings')" 
+              class="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-600/30 transition-all hover:-translate-y-1 active:scale-95 group border border-blue-400/20">
+            <Video class="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span class="font-black text-sm tracking-tight">Recordings</span>
+        </Link>
 
         <!-- Create/Edit Meeting Modal -->
         <Modal :show="showBoardModal" :title="boardForm.id ? 'Edit Meeting' : 'Schedule Meeting'" @close="showBoardModal = false">
@@ -215,13 +269,32 @@ const toggleRole = (role: string) => {
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Date & Time</label>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Date & Time</label>
+                            <button type="button" @click="setToday" class="text-[10px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-widest">Set Today</button>
+                        </div>
                         <div class="relative">
                             <Clock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                             <input v-model="boardForm.start_time" type="datetime-local"
                                    class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" required>
                         </div>
                     </div>
+                    
+                    <div class="flex items-center mt-4 sm:mt-6">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <div class="relative">
+                                <input type="checkbox" v-model="boardForm.recording_enabled" class="sr-only peer" />
+                                <div class="w-10 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-300">Record Meeting</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div v-if="boardForm.meeting_type === 'public'">
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Guest Emails (Comma separated)</label>
+                    <input v-model="boardForm.guest_emails" type="text" placeholder="guest1@example.com, guest2@example.com"
+                           class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
                 </div>
 
                 <div v-if="!boardForm.id && boardForm.meeting_type === 'board'">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { usePage, Link, router } from '@inertiajs/vue3';
+import PageLoader from '@/Components/PageLoader.vue';
 import { 
     LayoutDashboard, 
     Users, 
@@ -78,6 +79,7 @@ const toggleSidebar = () => isSidebarOpen.value = !isSidebarOpen.value;
 
 <template>
     <div class="min-h-screen bg-[#0a0c10] text-slate-200 selection:bg-blue-500/30 selection:text-blue-200">
+        <PageLoader />
         <!-- Sidebar Overlay (Mobile) -->
         <div v-if="isMobileMenuOpen" 
              @click="isMobileMenuOpen = false"
