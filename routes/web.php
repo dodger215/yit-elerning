@@ -21,6 +21,10 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+// SEO Routes
+Route::get('/sitemap.xml', [\App\Http\Controllers\SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('seo.robots');
+
 // Auth Routes
 Route::prefix('auth')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

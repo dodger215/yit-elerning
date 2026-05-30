@@ -64,7 +64,7 @@ const submit = () => {
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Unique Username</label>
                         <div class="relative">
                             <AtSign class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                            <input v-model="form.username" type="text" placeholder="ked_learner" 
+                            <input v-model="form.username" type="text" placeholder="Kotoka_learner" 
                                    class="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
                         </div>
                         <p v-if="form.errors.username" class="text-red-500 text-[10px] mt-1 font-bold">{{ form.errors.username }}</p>
@@ -74,14 +74,14 @@ const submit = () => {
                         <!-- First Name -->
                         <div>
                             <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">First Name</label>
-                            <input v-model="form.first_name" type="text" placeholder="Ked" 
+                            <input v-model="form.first_name" type="text" placeholder="Kotoka" 
                                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
                             <p v-if="form.errors.first_name" class="text-red-500 text-[10px] mt-1 font-bold">{{ form.errors.first_name }}</p>
                         </div>
                         <!-- Last Name -->
                         <div>
                             <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Last Name</label>
-                            <input v-model="form.last_name" type="text" placeholder="Enos" 
+                            <input v-model="form.last_name" type="text" placeholder="Kotoka" 
                                    class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
                             <p v-if="form.errors.last_name" class="text-red-500 text-[10px] mt-1 font-bold">{{ form.errors.last_name }}</p>
                         </div>
