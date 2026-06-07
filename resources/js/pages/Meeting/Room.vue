@@ -87,7 +87,7 @@ const uploadRecording = async (blob: Blob, mimeType: string = 'video/webm') => {
                 'Accept': 'application/json'
             }
         });
-        
+
         if (!response.ok) throw new Error('Upload failed');
         alert('Recording uploaded successfully!');
     } catch (err) {
@@ -149,7 +149,7 @@ const initJitsi = async () => {
             interfaceConfigOverwrite: {
                 TOOLBAR_BUTTONS: [
                     'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-                    'fodeviceselection', 'hangup', 'profile', 'chat', 'recording', 'share',  
+                    'fodeviceselection', 'hangup', 'profile', 'chat', 'recording', 'share',
                     'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
                     'videoquality', 'filmstrip', 'feedback', 'stats', 'shortcuts',
                     'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
@@ -206,7 +206,7 @@ const leaveRoom = () => {
 
 const copied = ref(false);
 const copyShareLink = () => {
-    const url = window.location.origin + route('meeting.join', props.meeting.room_id);
+    const url = route('meeting.join', props.meeting.room_id);
     navigator.clipboard.writeText(url).then(() => {
         copied.value = true;
         setTimeout(() => { copied.value = false; }, 2500);
