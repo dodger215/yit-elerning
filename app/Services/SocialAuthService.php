@@ -46,6 +46,13 @@ class SocialAuthService
             'expires_at' => property_exists($socialUser, 'expiresIn') ? now()->addSeconds($socialUser->expiresIn) : null,
         ];
 
+        $user = \App\Models\User::where('email', $oauthData['email'])->first();
+
+        if (!$user) {
+            session(['oauth_pending_register' => $oauthData]);
+            throw new \Exception('USER_NOT_FOUND');
+        }
+
         return $this->authService->updateOrCreateFromOAuth($oauthData);
     }
 

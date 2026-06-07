@@ -31,7 +31,13 @@ Route::prefix('auth')->group(function () {
     Route::post('/otp/send', [AuthController::class, 'sendOtp'])->name('auth.otp.send');
     Route::post('/otp/verify', [AuthController::class, 'verifyOtp'])->name('auth.otp.verify');
 
-    Route::inertia('/register', 'Auth/Register')->name('register');
+    Route::get('/register', function (\Illuminate\Http\Request $request) {
+        return Inertia::render('Auth/Register', [
+            'email' => $request->query('email'),
+            'first_name' => $request->query('first_name'),
+            'last_name' => $request->query('last_name'),
+        ]);
+    })->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.store');
 
     Route::get('/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');

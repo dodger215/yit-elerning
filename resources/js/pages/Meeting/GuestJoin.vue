@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { 
-    Video, 
-    User, 
+import {
+    Video,
+    User,
     ArrowRight,
     ShieldCheck,
     Globe
@@ -18,9 +18,9 @@ const form = useForm({
 
 const submit = () => {
     // Redirect to the same URL but with the guest_name query parameter
-    window.location.href = route('meeting.join', { 
-        room_id: props.meeting.room_id, 
-        guest_name: form.guest_name 
+    window.location.href = route('meeting.join', {
+        room_id: props.meeting.room_id,
+        guest_name: form.guest_name
     });
 };
 </script>
@@ -35,7 +35,7 @@ const submit = () => {
 
         <div class="w-full max-w-[480px] relative z-10">
             <div class="bg-[#0d1117] border border-white/10 rounded-[2.5rem] p-10 shadow-2xl shadow-black/60 text-center">
-                
+
                 <div class="w-20 h-20 bg-blue-600/10 border border-blue-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
                     <Globe class="w-10 h-10 text-blue-500" />
                 </div>
@@ -48,14 +48,14 @@ const submit = () => {
                         <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">What's your display name?</label>
                         <div class="relative group">
                             <User class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                            <input v-model="form.guest_name" type="text" placeholder="e.g. John Doe"
+                            <input v-model="form.guest_name" type="text" placeholder="Enter your name"
                                    class="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-slate-600"
                                    required autofocus>
                         </div>
                         <p class="text-[10px] text-slate-600 mt-3 italic text-center font-medium">This name will be visible to everyone in the meeting room.</p>
                     </div>
 
-                    <button type="submit" 
+                    <button type="submit"
                             class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-xl shadow-blue-600/20">
                         Join Meeting Now
                         <ArrowRight class="w-5 h-5" />
@@ -69,7 +69,7 @@ const submit = () => {
             </div>
 
             <p class="text-center text-slate-600 text-xs mt-8 font-medium">
-                Want to host your own meetings? 
+                Want to host your own meetings?
                 <Link href="/register" class="text-blue-500 hover:underline font-bold">Create an account</Link>
             </p>
         </div>
