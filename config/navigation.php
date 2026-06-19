@@ -23,6 +23,11 @@ return [
                 ],
             ],
             [
+                'label' => 'Forms',
+                'icon' => 'FileText',
+                'route' => 'forms.index',
+            ],
+            [
                 'label' => 'Instructors',
                 'icon' => 'GraduationCap',
                 'route' => 'admin.instructors.index',
@@ -59,6 +64,11 @@ return [
                 'route' => 'meetings.index',
             ],
             [
+                'label' => 'Forms',
+                'icon' => 'FileText',
+                'route' => 'forms.index',
+            ],
+            [
                 'label' => 'My Reports',
                 'icon' => 'PieChart',
                 'route' => 'reports.index',
@@ -93,6 +103,11 @@ return [
                 'label' => 'Meetings',
                 'icon' => 'Video',
                 'route' => 'meetings.index',
+            ],
+            [
+                'label' => 'Assignments & Forms',
+                'icon' => 'FileText',
+                'route' => 'forms.index',
             ],
             [
                 'label' => 'My Progress',

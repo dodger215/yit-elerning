@@ -3,27 +3,34 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseContentController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FormController;
 use App\Http\Controllers\InstructorManagementController;
 use App\Http\Controllers\InviteController;
+use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SeoController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VideoController;
-use Illuminate\Support\Facades\Route;
-
 use App\Models\Video;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
     $videos = Video::latest()->take(6)->get();
+
     return Inertia::render('Welcome', [
         'videos' => $videos,
-        'appName' => config('app.name', 'EduConnect')
+        'appName' => config('app.name', 'EduConnect'),
     ]);
 })->name('home');
 
 // SEO Routes
-Route::get('/sitemap.xml', [\App\Http\Controllers\SeoController::class, 'sitemap'])->name('seo.sitemap');
-Route::get('/robots.txt', [\App\Http\Controllers\SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 
 // Auth Routes
 Route::prefix('auth')->group(function () {
@@ -31,7 +38,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/otp/send', [AuthController::class, 'sendOtp'])->name('auth.otp.send');
     Route::post('/otp/verify', [AuthController::class, 'verifyOtp'])->name('auth.otp.verify');
 
-    Route::get('/register', function (\Illuminate\Http\Request $request) {
+    Route::get('/register', function (Request $request) {
         return Inertia::render('Auth/Register', [
             'email' => $request->query('email'),
             'first_name' => $request->query('first_name'),
@@ -52,26 +59,26 @@ Route::prefix('auth')->group(function () {
 });
 
 // Hybrid Routes (Public or Auth)
-Route::get('/meeting/{room_id}', [\App\Http\Controllers\MeetingController::class, 'join'])->name('meeting.join');
-Route::get('/meeting/{room_id}/ended', [\App\Http\Controllers\MeetingController::class, 'ended'])->name('meeting.ended');
-Route::get('/meetings/recordings/{file}', [\App\Http\Controllers\MeetingController::class, 'downloadRecording'])->name('meetings.download-recording');
+Route::get('/meeting/{room_id}', [MeetingController::class, 'join'])->name('meeting.join');
+Route::get('/meeting/{room_id}/ended', [MeetingController::class, 'ended'])->name('meeting.ended');
+Route::get('/meetings/recordings/{file}', [MeetingController::class, 'downloadRecording'])->name('meetings.download-recording');
 
 // Protected Routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Meetings Routes
-    Route::get('/meetings', [\App\Http\Controllers\MeetingController::class, 'index'])->name('meetings.index');
-    Route::get('/meetings/recordings', [\App\Http\Controllers\MeetingController::class, 'recordings'])->name('meetings.recordings');
-    Route::post('/meetings', [\App\Http\Controllers\MeetingController::class, 'store'])->name('meetings.store');
-    Route::patch('/meetings/{meeting}', [\App\Http\Controllers\MeetingController::class, 'update'])->name('meetings.update');
-    Route::delete('/meetings/{meeting}', [\App\Http\Controllers\MeetingController::class, 'destroy'])->name('meetings.destroy');
-    Route::post('/meetings/{meeting}/upload-recording', [\App\Http\Controllers\MeetingController::class, 'uploadRecording'])->name('meetings.upload-recording');
-    Route::post('/meetings/{meeting}/resend-invites', [\App\Http\Controllers\MeetingController::class, 'resendInvites'])->name('meetings.resend-invites');
+    Route::get('/meetings', [MeetingController::class, 'index'])->name('meetings.index');
+    Route::get('/meetings/recordings', [MeetingController::class, 'recordings'])->name('meetings.recordings');
+    Route::post('/meetings', [MeetingController::class, 'store'])->name('meetings.store');
+    Route::patch('/meetings/{meeting}', [MeetingController::class, 'update'])->name('meetings.update');
+    Route::delete('/meetings/{meeting}', [MeetingController::class, 'destroy'])->name('meetings.destroy');
+    Route::post('/meetings/{meeting}/upload-recording', [MeetingController::class, 'uploadRecording'])->name('meetings.upload-recording');
+    Route::post('/meetings/{meeting}/resend-invites', [MeetingController::class, 'resendInvites'])->name('meetings.resend-invites');
 
     // Profile & Settings
-    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
-    Route::get('/settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
 
     // Reports Routes
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -82,7 +89,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/invites', [InviteController::class, 'index'])->name('admin.invites.index');
         Route::post('/invite', [InviteController::class, 'sendInvite'])->name('admin.invite');
         Route::get('/invite', fn () => redirect()->route('admin.invites.index'))->name('admin.invite.redirect');
-        
+
         // User Management
         Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
         Route::put('/admin/users/{user}/roles', [UserController::class, 'updateRoles'])->name('admin.users.roles.update');
@@ -116,7 +123,7 @@ Route::middleware(['auth'])->group(function () {
     // Course Content Management
     Route::post('/courses/{course}/sections', [CourseContentController::class, 'addSection'])->name('courses.sections.store');
     Route::post('/sections/{section}/lessons', [CourseContentController::class, 'addLesson'])->name('sections.lessons.store');
-    
+
     // Lesson Content Editor
     Route::get('/lessons/{lesson}/content', [CourseContentController::class, 'editLessonContent'])->name('lessons.content.edit');
     Route::put('/lessons/{lesson}/content', [CourseContentController::class, 'updateLessonContent'])->name('lessons.content.update');
@@ -129,3 +136,14 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/videos/{video}', [VideoController::class, 'update'])->name('videos.update');
     Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
 });
+
+Route::middleware(['auth'])->prefix('forms')->group(function () {
+    Route::get('/', [FormController::class, 'index'])->name('forms.index');
+    Route::get('/create', [FormController::class, 'createForm'])->name('forms.create');
+    Route::post('/create', [FormController::class, 'storeForm'])->name('forms.store');
+    Route::get('/{form}/submissions', [FormController::class, 'submissions'])->name('forms.submissions');
+    Route::post('/submissions/{submission}/grade', [FormController::class, 'gradeSubmission'])->name('forms.grade');
+});
+
+Route::get('forms/{form}', [FormController::class, 'showForm'])->name('forms.show');
+Route::post('forms/{form}/submit', [FormController::class, 'submitForm'])->name('forms.submit');

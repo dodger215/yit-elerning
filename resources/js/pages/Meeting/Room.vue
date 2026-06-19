@@ -14,11 +14,54 @@ const api = ref<any>(null);
 const error = ref<string | null>(null);
 const isLobbyEnabled = ref(false);
 
+// Minimized state variables
+const isMinimized = ref(false);
+const isPreviewMuted = ref(false);
+const floatingVideoRef = ref<HTMLElement | null>(null);
+
+// Recording state variables
 const isRecording = ref(false);
 const isUploading = ref(false);
 let mediaRecorder: MediaRecorder | null = null;
 let recordedChunks: Blob[] = [];
 
+// Minimization functions
+const minimizeMeeting = () => {
+    if (api.value) {
+        isPreviewMuted.value = false;
+        isMinimized.value = true;
+        // Mute video when minimized to save bandwidth, keep audio active
+        api.value.executeCommand('toggleVideo');
+    }
+};
+
+const restoreMeeting = () => {
+    isMinimized.value = false;
+    if (api.value) {
+        // Restore video when coming back
+        api.value.executeCommand('toggleVideo');
+    }
+};
+
+const togglePreviewMute = () => {
+    isPreviewMuted.value = !isPreviewMuted.value;
+    if (api.value) {
+        api.value.executeCommand('toggleAudio');
+    }
+};
+
+const leaveCallFromPreview = () => {
+    if (confirm('Leave the meeting?')) {
+        if (isRecording.value) stopRecording();
+        if (api.value) {
+            api.value.executeCommand('hangup');
+            api.value.dispose();
+        }
+        router.visit(route('meeting.ended', props.meeting.room_id));
+    }
+};
+
+// Recording functions
 const toggleRecording = async () => {
     if (isRecording.value) {
         stopRecording();
@@ -98,6 +141,7 @@ const uploadRecording = async (blob: Blob, mimeType: string = 'video/webm') => {
     }
 };
 
+// Jitsi initialization
 const loadJitsiScript = () => {
     return new Promise((resolve, reject) => {
         if ((window as any).JitsiMeetExternalAPI) {
@@ -133,7 +177,6 @@ const initJitsi = async () => {
                 prejoinPageEnabled: false,
                 enableWelcomePage: false,
                 enableClosePage: false,
-                // Watermark and Branding
                 hideConferenceTimer: true,
                 showJitsiWatermark: false,
                 showBrandWatermark: false,
@@ -169,7 +212,6 @@ const initJitsi = async () => {
 
         api.value = new (window as any).JitsiMeetExternalAPI(domain, options);
 
-        // Event Listeners
         api.value.addEventListeners({
             readyToClose: () => leaveRoom(),
             videoConferenceLeft: () => leaveRoom(),
@@ -197,6 +239,7 @@ const toggleLobby = () => {
         api.value.executeCommand('toggleLobby', isLobbyEnabled.value);
     }
 };
+
 const leaveRoom = () => {
     if (isRecording.value) {
         stopRecording();
@@ -218,7 +261,8 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    if (api.value) {
+    // Only dispose if not minimized to keep connection alive
+    if (api.value && !isMinimized.value) {
         api.value.dispose();
     }
 });
@@ -241,7 +285,7 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Host Panel (Floating inline or here) -->
+            <!-- Host Panel -->
             <div v-if="isHost" class="hidden md:flex items-center gap-2 bg-slate-800/50 p-1 rounded-lg border border-white/5">
                 <button v-if="meeting.recording_enabled" @click="toggleRecording" :title="isRecording ? 'Stop Recording' : 'Start Recording'" class="p-1.5 hover:bg-slate-700 rounded transition-colors flex items-center gap-1" :class="isRecording ? 'text-red-500' : 'text-slate-300'">
                     <svg v-if="isRecording" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>
@@ -260,7 +304,6 @@ onUnmounted(() => {
             </div>
 
             <div class="flex items-center gap-4 text-[10px] text-slate-400">
-                <!-- Public Share Link -->
                 <button
                     v-if="meeting.meeting_type === 'public'"
                     @click="copyShareLink"
@@ -282,25 +325,120 @@ onUnmounted(() => {
             </div>
         </header>
 
-        <!-- Jitsi IFrame Container -->
         <main class="flex-1 bg-black relative">
-            <!-- Overlay to hide Jitsi Watermark COMPLETELY -->
-            <!-- <div class="absolute top-0 left-0 w-48 h-16 bg-slate-950 z-50 flex items-center px-4 pointer-events-none select-none border-b border-r border-white/5">
-                <div class="flex items-center gap-3">
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                    <div>
-                        <span class="block text-[10px] font-black text-slate-100 uppercase tracking-[0.2em] leading-none mb-1">Secure Session</span>
-                        <span class="block text-[7px] text-slate-500 uppercase tracking-widest font-medium">Youth In Tech • Encrypted</span>
+            <!-- Full Meeting View -->
+            <div v-if="!isMinimized" class="absolute inset-0">
+                <div ref="jitsiContainer" class="w-full h-full"></div>
+
+                <!-- Minimize Button -->
+                <button
+                    @click="minimizeMeeting"
+                    class="absolute bottom-4 right-4 z-50 bg-slate-900/90 backdrop-blur-md hover:bg-slate-800 rounded-full p-2 shadow-lg transition-all border border-white/10 group"
+                    title="Minimize meeting"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover:text-white">
+                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                    </svg>
+                </button>
+
+                <!-- Error State -->
+                <div v-if="error" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950">
+                    <div class="text-red-500 mb-4 text-center">
+                        <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p>{{ error }}</p>
                     </div>
                 </div>
-            </div> -->
 
-            <div ref="jitsiContainer" class="absolute inset-0 w-full h-full"></div>
+                <!-- Loading State -->
+                <div v-if="!api && !error" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950">
+                    <div class="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-[10px] text-slate-500 font-medium uppercase tracking-widest animate-pulse">
+                        Initializing Secure Meeting...
+                    </p>
+                </div>
+            </div>
 
-            <!-- Loading State Overlay -->
-            <div v-if="!api" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 z-0">
-                <div class="w-10 h-10 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p class="text-[10px] text-slate-500 font-medium uppercase tracking-widest animate-pulse">Initializing Secure Meeting...</p>
+            <!-- Floating Preview Window (Minimized Mode) -->
+            <div
+                v-else
+                ref="floatingVideoRef"
+                class="fixed bottom-6 right-6 w-80 h-48 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-2xl border border-white/10 overflow-hidden z-[9999] transition-all hover:shadow-xl hover:scale-105 cursor-pointer group"
+                @click="restoreMeeting"
+            >
+                <!-- Mini Preview Content -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center p-4">
+                    <!-- Animated mic indicator -->
+                    <div class="relative mb-3">
+                        <div class="w-14 h-14 bg-blue-600/20 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400">
+                                <rect x="2" y="5" width="20" height="14" rx="2" ry="2"/>
+                                <path d="M16 5v14M8 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/>
+                            </svg>
+                        </div>
+                        <div v-if="!isPreviewMuted" class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse"></div>
+                        <div v-else class="absolute -bottom-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-slate-900"></div>
+                    </div>
+
+                    <p class="text-sm font-semibold text-white">{{ meeting.title }}</p>
+                    <p class="text-[10px] text-slate-400 mt-1">
+                        {{ isPreviewMuted ? 'Muted' : 'Live' }} • {{ participantName }}
+                    </p>
+
+                    <!-- Recording indicator -->
+                    <div v-if="isRecording" class="mt-2 flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                        <span class="text-[8px] text-red-400 font-mono">REC</span>
+                    </div>
+                </div>
+
+                <!-- Hover Controls -->
+                <div class="absolute bottom-0 left-0 right-0 flex justify-center gap-2 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <button
+                        @click.stop="togglePreviewMute"
+                        class="bg-slate-800/90 backdrop-blur-md rounded-full p-2 hover:bg-slate-700 transition transform hover:scale-110"
+                        :class="isPreviewMuted ? 'text-red-400' : 'text-slate-300'"
+                        :title="isPreviewMuted ? 'Unmute' : 'Mute'"
+                    >
+                        <svg v-if="isPreviewMuted" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                            <line x1="4" y1="4" x2="20" y2="20"/>
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                            <line x1="12" y1="19" x2="12" y2="23"/>
+                            <line x1="8" y1="23" x2="16" y2="23"/>
+                        </svg>
+                    </button>
+
+                    <button
+                        @click.stop="restoreMeeting"
+                        class="bg-blue-600 hover:bg-blue-700 rounded-full p-2 transition transform hover:scale-110"
+                        title="Restore meeting"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+                        </svg>
+                    </button>
+
+                    <button
+                        @click.stop="leaveCallFromPreview"
+                        class="bg-red-600/80 hover:bg-red-600 rounded-full p-2 transition transform hover:scale-110"
+                        title="Leave meeting"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18.36 6.64A9 9 0 0 1 20.77 15"/>
+                            <path d="M6.16 6.16a9 9 0 1 0 12.68 12.68"/>
+                            <path d="M12 2v4"/>
+                            <path d="m2 2 20 20"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </main>
     </div>
@@ -311,5 +449,27 @@ onUnmounted(() => {
     border: none;
     width: 100% !important;
     height: 100% !important;
+}
+
+/* Smooth animation for floating window */
+.fixed.bottom-6.right-6 {
+    animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* Hover scale effect */
+.group:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
 }
 </style>

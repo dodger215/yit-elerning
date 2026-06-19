@@ -1,6 +1,7 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createApp, h, DefineComponent } from 'vue';
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

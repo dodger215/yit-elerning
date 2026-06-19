@@ -29,6 +29,7 @@
         "vue-tsc": "^2.2.4"
     },
     "dependencies": {
+        "@fortawesome/fontawesome-free": "^7.2.0",
         "@inertiajs/vite": "^3.0.0",
         "@inertiajs/vue3": "^3.0.0",
         "@tailwindcss/vite": "^4.1.11",
