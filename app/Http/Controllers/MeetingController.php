@@ -166,16 +166,47 @@ class MeetingController extends Controller
     {
         $request->validate([
             'recording' => 'required|file',
+            'chunk_index' => 'nullable|integer',
+            'total_chunks' => 'nullable|integer',
+            'file_type' => 'nullable|string|in:video,audio',
         ]);
 
-        if ($request->hasFile('recording')) {
-            $path = $request->file('recording')->store('meeting_recordings', 'public');
-            $meeting->update([
-                'recording_url' => route('meetings.download-recording', ['file' => basename($path)]),
-            ]);
+        $file = $request->file('recording');
+        
+        if (!$file->isValid()) {
+            return response()->json(['success' => false, 'message' => $file->getErrorMessage()], 422);
         }
 
-        return response()->json(['success' => true]);
+        $chunkIndex = $request->input('chunk_index', 0);
+        $totalChunks = $request->input('total_chunks', 1);
+        $fileType = $request->input('file_type', 'video');
+        $extension = $fileType === 'audio' ? 'webm' : 'mp4';
+        $fileName = 'meeting_'.$meeting->id.'_recording.'.$extension;
+        
+        $path = storage_path('app/public/recordings');
+        if (!file_exists($path)) {
+            mkdir($path, 0755, true);
+        }
+        
+        $finalPath = $path . '/' . $fileName;
+
+        if ($chunkIndex == 0 && file_exists($finalPath)) {
+            @unlink($finalPath);
+        }
+
+        $chunk = file_get_contents($file->getRealPath());
+        file_put_contents($finalPath, $chunk, FILE_APPEND);
+
+        if ($chunkIndex == $totalChunks - 1) {
+            if ($fileType === 'video') {
+                $meeting->update([
+                    'recording_url' => route('meetings.download-recording', ['file' => $fileName]),
+                ]);
+            }
+            return response()->json(['success' => true, 'completed' => true]);
+        }
+
+        return response()->json(['success' => true, 'completed' => false]);
     }
 
     /**
@@ -195,7 +226,11 @@ class MeetingController extends Controller
      */
     public function downloadRecording($file)
     {
-        $path = storage_path('app/public/meeting_recordings/'.$file);
+        $path = storage_path('app/public/recordings/'.$file);
+
+        if (! file_exists($path)) {
+            $path = storage_path('app/public/meeting_recordings/'.$file);
+        }
 
         if (! file_exists($path)) {
             abort(404, 'Recording not found.');

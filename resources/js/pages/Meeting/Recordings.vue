@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { 
@@ -6,12 +7,43 @@ import {
     Calendar,
     ArrowLeft,
     Download,
-    PlayCircle
+    PlayCircle,
+    X
 } from 'lucide-vue-next';
 
 defineProps<{
     meetings: any[];
 }>();
+
+const isVideoModalOpen = ref(false);
+const currentMeeting = ref<any>(null);
+const videoPlayer = ref<HTMLVideoElement | null>(null);
+const audioPlayer = ref<HTMLAudioElement | null>(null);
+
+const openVideoModal = (meeting: any) => {
+    currentMeeting.value = meeting;
+    isVideoModalOpen.value = true;
+};
+
+const closeVideoModal = () => {
+    isVideoModalOpen.value = false;
+    currentMeeting.value = null;
+};
+
+const syncAudio = () => {
+    if (videoPlayer.value && audioPlayer.value) {
+        audioPlayer.value.currentTime = videoPlayer.value.currentTime;
+    }
+};
+
+const playAudio = () => { if (audioPlayer.value) audioPlayer.value.play(); };
+const pauseAudio = () => { if (audioPlayer.value) audioPlayer.value.pause(); };
+const onSeeked = () => syncAudio();
+const onRateChange = () => {
+    if (audioPlayer.value && videoPlayer.value) {
+        audioPlayer.value.playbackRate = videoPlayer.value.playbackRate;
+    }
+};
 </script>
 
 <template>
@@ -75,11 +107,11 @@ defineProps<{
                         <div class="flex items-center justify-between pt-6 border-t border-white/5">
                             <div class="flex-grow"></div>
                             <div class="flex items-center gap-2">
-                                <a :href="meeting.recording_url" target="_blank"
+                                <button @click="openVideoModal(meeting)"
                                    class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-xs transition-all active:scale-95 shadow-lg shadow-blue-600/20">
                                     <Video class="w-4 h-4" />
                                     Watch
-                                </a>
+                                </button>
                                 <a :href="meeting.recording_url + '?download=1'"
                                    class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-bold text-xs transition-all active:scale-95" title="Download Recording">
                                     <Download class="w-4 h-4" />
@@ -95,6 +127,38 @@ defineProps<{
                 <Video class="w-12 h-12 text-slate-700 mx-auto mb-4" />
                 <h3 class="text-xl font-bold text-white">No recordings found</h3>
                 <p class="text-slate-500 text-sm mt-2 max-w-xs mx-auto">There are currently no recorded meetings available.</p>
+            </div>
+        </div>
+
+        <!-- Video Player Modal -->
+        <div v-if="isVideoModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+            <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-5xl w-full shadow-2xl relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-white">{{ currentMeeting?.title }}</h2>
+                    <button @click="closeVideoModal" class="bg-white/10 hover:bg-red-500 hover:text-white text-slate-300 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+                        <X class="w-5 h-5" />
+                    </button>
+                </div>
+                
+                <div class="relative w-full aspect-video bg-black rounded-xl overflow-hidden border border-white/10 shadow-inner">
+                    <video ref="videoPlayer" 
+                           controls 
+                           class="w-full h-full" 
+                           :src="currentMeeting?.recording_url"
+                           @play="playAudio"
+                           @pause="pauseAudio"
+                           @seeked="onSeeked"
+                           @ratechange="onRateChange"
+                           @waiting="pauseAudio"
+                           @playing="playAudio"
+                    ></video>
+                </div>
+
+                <!-- Hidden audio element for the merged sound track -->
+                <audio ref="audioPlayer" 
+                       v-if="currentMeeting" 
+                       :src="currentMeeting.recording_url.replace('.mp4', '.webm')">
+                </audio>
             </div>
         </div>
     </AppLayout>

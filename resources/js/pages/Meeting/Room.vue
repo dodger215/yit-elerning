@@ -22,8 +22,59 @@ const floatingVideoRef = ref<HTMLElement | null>(null);
 // Recording state variables
 const isRecording = ref(false);
 const isUploading = ref(false);
-let mediaRecorder: MediaRecorder | null = null;
-let recordedChunks: Blob[] = [];
+let videoRecorder: MediaRecorder | null = null;
+let audioRecorder: MediaRecorder | null = null;
+let videoChunks: Blob[] = [];
+let audioChunks: Blob[] = [];
+let displayStreamRef: MediaStream | null = null;
+let voiceStreamRef: MediaStream | null = null;
+let audioContextRef: AudioContext | null = null;
+
+// Toast Notifications
+const toastMessage = ref('');
+const toastType = ref('info');
+let toastTimeout: any = null;
+
+const showToast = (message: string, type: string = 'info') => {
+    toastMessage.value = message;
+    toastType.value = type;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        toastMessage.value = '';
+    }, 4000);
+};
+
+const playNotificationSound = () => {
+    try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); // 600 Hz
+        oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+        
+        gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+    } catch (e) {
+        console.error('Audio playback failed', e);
+    }
+};
+
+const broadcastToParticipants = (msgType: string, payload: any = {}) => {
+    if (!api.value) return;
+    const msg = JSON.stringify({ type: msgType, ...payload });
+    const participants = api.value.getParticipantsInfo();
+    participants.forEach((p: any) => {
+        api.value.executeCommand('sendEndpointTextMessage', p.participantId, msg);
+    });
+};
 
 // Minimization functions
 const minimizeMeeting = () => {
@@ -72,35 +123,108 @@ const toggleRecording = async () => {
 
 const startRecording = async () => {
     try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({
             video: true,
             audio: true
         });
 
-        let mimeType = 'video/webm';
-        if (MediaRecorder.isTypeSupported('video/mp4')) {
-            mimeType = 'video/mp4';
-        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
-            mimeType = 'video/webm;codecs=vp9,opus';
+        let voiceStream = null;
+        try {
+            voiceStream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false
+            });
+        } catch (e) {
+            console.warn("Microphone not available or permission denied", e);
         }
 
-        mediaRecorder = new MediaRecorder(stream, { mimeType });
-        recordedChunks = [];
+        displayStreamRef = displayStream;
+        voiceStreamRef = voiceStream;
 
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-                recordedChunks.push(event.data);
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
+        audioContextRef = audioContext;
+        const dest = audioContext.createMediaStreamDestination();
+
+        if (displayStream.getAudioTracks().length > 0) {
+            const displaySource = audioContext.createMediaStreamSource(displayStream);
+            displaySource.connect(dest);
+        }
+
+        if (voiceStream && voiceStream.getAudioTracks().length > 0) {
+            const voiceSource = audioContext.createMediaStreamSource(voiceStream);
+            voiceSource.connect(dest);
+        }
+
+        const videoStream = new MediaStream(displayStream.getVideoTracks());
+        const audioStream = new MediaStream(dest.stream.getAudioTracks());
+
+        let videoMimeType = 'video/webm';
+        if (MediaRecorder.isTypeSupported('video/mp4')) {
+            videoMimeType = 'video/mp4';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+            videoMimeType = 'video/webm;codecs=vp9';
+        }
+
+        let audioMimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            audioMimeType = 'audio/webm;codecs=opus';
+        }
+
+        videoRecorder = new MediaRecorder(videoStream, { mimeType: videoMimeType });
+        audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMimeType });
+        
+        videoChunks = [];
+        audioChunks = [];
+
+        videoRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) videoChunks.push(event.data);
+        };
+
+        audioRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        let uploadPromises: Promise<any>[] = [];
+
+        videoRecorder.onstop = () => {
+            const videoBlob = new Blob(videoChunks, { type: videoMimeType });
+            uploadPromises.push(uploadRecording(videoBlob, 'video'));
+        };
+
+        audioRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: audioMimeType });
+            uploadPromises.push(uploadRecording(audioBlob, 'audio'));
+            
+            // Wait for both to finish uploading
+            try {
+                await Promise.all(uploadPromises);
+            } catch (err) {
+                console.error('Upload error', err);
             }
+
+            if (displayStreamRef) displayStreamRef.getTracks().forEach(track => track.stop());
+            if (voiceStreamRef) voiceStreamRef.getTracks().forEach(track => track.stop());
+            if (audioContextRef && audioContextRef.state !== 'closed') audioContextRef.close();
+            
+            displayStreamRef = null;
+            voiceStreamRef = null;
+            audioContextRef = null;
         };
 
-        mediaRecorder.onstop = async () => {
-            const blob = new Blob(recordedChunks, { type: mimeType });
-            await uploadRecording(blob, mimeType);
-            stream.getTracks().forEach(track => track.stop());
+        displayStream.getVideoTracks()[0].onended = () => {
+            stopRecording();
         };
 
-        mediaRecorder.start();
+        videoRecorder.start();
+        audioRecorder.start();
         isRecording.value = true;
+        
+        showToast('This meeting is being recorded.', 'error');
+        playNotificationSound();
+        broadcastToParticipants('RECORDING_STARTED');
     } catch (err) {
         console.error("Error starting screen recording", err);
         alert("Could not start recording. Please ensure permissions are granted.");
@@ -108,34 +232,57 @@ const startRecording = async () => {
 };
 
 const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-        isRecording.value = false;
+    if (videoRecorder && videoRecorder.state !== 'inactive') {
+        videoRecorder.stop();
     }
+    if (audioRecorder && audioRecorder.state !== 'inactive') {
+        audioRecorder.stop();
+    }
+    isRecording.value = false;
+    broadcastToParticipants('RECORDING_STOPPED');
 };
 
-const uploadRecording = async (blob: Blob, mimeType: string = 'video/webm') => {
+const uploadRecording = async (blob: Blob, type: 'video' | 'audio') => {
     isUploading.value = true;
-    const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
-    const formData = new FormData();
-    formData.append('recording', blob, `meeting-${props.meeting.id}-recording.${extension}`);
+    const extension = type === 'video' ? 'mp4' : 'webm'; // video as mp4, audio as webm
+    const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
+    const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
 
     try {
         const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
-        const response = await fetch(route('meetings.upload-recording', props.meeting.id), {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-XSRF-TOKEN': decodeURIComponent(token || ''),
-                'Accept': 'application/json'
-            }
-        });
+        
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, blob.size);
+            const chunk = blob.slice(start, end);
+            
+            const formData = new FormData();
+            formData.append('recording', chunk, `meeting-${props.meeting.id}-recording.${extension}`);
+            formData.append('chunk_index', i.toString());
+            formData.append('total_chunks', totalChunks.toString());
+            formData.append('file_type', type);
 
-        if (!response.ok) throw new Error('Upload failed');
-        alert('Recording uploaded successfully!');
-    } catch (err) {
+            const response = await fetch(route('meetings.upload-recording', props.meeting.id), {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-XSRF-TOKEN': decodeURIComponent(token || ''),
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.message || 'Upload failed');
+            }
+        }
+        
+        if (type === 'video') {
+            showToast('Video recording uploaded successfully!', 'info');
+        }
+    } catch (err: any) {
         console.error('Error uploading recording', err);
-        alert('Failed to upload recording.');
+        showToast('Failed to upload recording: ' + err.message, 'error');
     } finally {
         isUploading.value = false;
     }
@@ -215,8 +362,36 @@ const initJitsi = async () => {
         api.value.addEventListeners({
             readyToClose: () => leaveRoom(),
             videoConferenceLeft: () => leaveRoom(),
+            videoConferenceJoined: () => {
+                showToast('Welcome! This meeting is currently ongoing.', 'info');
+            },
+            participantJoined: (event: any) => {
+                if (props.isHost) {
+                    setTimeout(() => {
+                        const msg = JSON.stringify({ type: 'MEETING_ONGOING', isRecording: isRecording.value });
+                        api.value.executeCommand('sendEndpointTextMessage', event.id, msg);
+                    }, 1500);
+                }
+            },
             endpointTextMessageReceived: (event: any) => {
-                console.log('Message received:', event);
+                try {
+                    const text = event.data?.eventData?.text || event.text || event.eventData?.text;
+                    if (!text) return;
+                    const data = JSON.parse(text);
+                    if (data.type === 'RECORDING_STARTED') {
+                        showToast('This meeting is being recorded.', 'error');
+                        playNotificationSound();
+                    } else if (data.type === 'RECORDING_STOPPED') {
+                        showToast('Recording has stopped.', 'info');
+                    } else if (data.type === 'MEETING_ONGOING') {
+                        if (data.isRecording) {
+                            showToast('This meeting is being recorded.', 'error');
+                            playNotificationSound();
+                        }
+                    }
+                } catch (e) {
+                    console.log('Message received:', event);
+                }
             }
         });
 
@@ -271,6 +446,15 @@ onUnmounted(() => {
 <template>
     <Head :title="`Meeting: ${meeting.title}`" />
     <PageLoader />
+
+    <!-- Toast UI -->
+    <div v-if="toastMessage" :class="[
+        'fixed top-20 right-6 px-4 py-3 rounded-lg shadow-xl border z-[10000] transition-all transform flex items-center gap-3',
+        toastType === 'info' ? 'bg-slate-800 border-blue-500/30 text-blue-100' : 'bg-red-900/90 border-red-500/50 text-red-100'
+    ]">
+        <div :class="['w-2 h-2 rounded-full animate-pulse', toastType === 'info' ? 'bg-blue-500' : 'bg-red-500']"></div>
+        <p class="text-sm font-medium">{{ toastMessage }}</p>
+    </div>
 
     <div class="fixed inset-0 bg-black text-white flex flex-col overflow-hidden">
         <!-- Header -->

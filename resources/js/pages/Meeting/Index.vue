@@ -4,10 +4,10 @@ import { Head, Link, usePage, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Card from '@/components/Card.vue';
 import Modal from '@/components/Modal.vue';
-import { 
-    Video, 
-    Calendar, 
-    Users, 
+import {
+    Video,
+    Calendar,
+    Users,
     Plus,
     ArrowRight,
     Search,
@@ -59,7 +59,7 @@ const handleEdit = (meeting: any) => {
     const date = new Date(meeting.start_time);
     const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     boardForm.start_time = localDate;
-    
+
     showBoardModal.value = true;
 };
 
@@ -124,27 +124,36 @@ const toggleRole = (role: string) => {
                     <h1 class="text-3xl font-black text-white tracking-tight">Meetings</h1>
                     <p class="text-slate-500 font-medium mt-1">Manage and join your interactive sessions.</p>
                 </div>
-                
-                <button @click="openCreateModal" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all active:scale-95">
-                    <Plus class="w-4 h-4" />
-                    New Meeting
-                </button>
+
+                <div class="flex flex-direction-row justify-content-space-between m-4">
+                    <button @click="openCreateModal" class="flex items-center gap-2 px-4 py-2 mr-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 transition-all active:scale-95">
+                        <Plus class="w-4 h-4" />
+                        New Meeting
+                    </button>
+
+                    <Link :href="route('meetings.recordings')"
+                        class="z-50 flex items-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-2xl shadow-blue-600/30 transition-all hover:-translate-y-1 active:scale-95 group border border-blue-400/20">
+                        <Video class="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span class="font-black text-sm tracking-tight">Recordings</span>
+                    </Link>
+                </div>
+
             </div>
 
             <!-- Filters -->
             <div class="flex flex-col sm:flex-row gap-4">
                 <div class="relative flex-grow">
                     <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input type="text" placeholder="Filter meetings by title or host..." 
+                    <input type="text" placeholder="Filter meetings by title or host..."
                            class="w-full bg-[#0d1117] border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all">
                 </div>
             </div>
 
             <!-- Meetings Grid -->
             <div v-if="meetings.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div v-for="meeting in meetings" :key="meeting.id" 
+                <div v-for="meeting in meetings" :key="meeting.id"
                      class="group bg-[#0d1117] border border-white/10 rounded-[2.5rem] p-8 hover:border-blue-500/30 transition-all shadow-2xl shadow-black/40 relative overflow-hidden">
-                    
+
                     <!-- Type Badge -->
                     <div class="absolute top-8 right-8">
                         <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
@@ -188,16 +197,16 @@ const toggleRole = (role: string) => {
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <button v-if="isHostOrSupervisor(meeting) && meeting.meeting_type === 'public' && meeting.guest_emails && meeting.guest_emails.length > 0" 
-                                    @click="handleResendInvites(meeting)" 
+                            <button v-if="isHostOrSupervisor(meeting) && meeting.meeting_type === 'public' && meeting.guest_emails && meeting.guest_emails.length > 0"
+                                    @click="handleResendInvites(meeting)"
                                     class="p-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl transition-all active:scale-95" title="Resend Invites">
                                 <Mail class="w-4 h-4" />
                             </button>
-                            <button v-if="isHostOrSupervisor(meeting)" @click="handleEdit(meeting)" 
+                            <button v-if="isHostOrSupervisor(meeting)" @click="handleEdit(meeting)"
                                     class="p-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl transition-all active:scale-95" title="Edit Meeting">
                                 <Edit3 class="w-4 h-4" />
                             </button>
-                            <button v-if="isHostOrSupervisor(meeting)" @click="handleDelete(meeting)" 
+                            <button v-if="isHostOrSupervisor(meeting)" @click="handleDelete(meeting)"
                                     class="p-2.5 bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-500 rounded-xl transition-all active:scale-95" title="Delete Meeting">
                                 <Trash2 class="w-4 h-4" />
                             </button>
@@ -209,7 +218,7 @@ const toggleRole = (role: string) => {
                                     class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-bold text-xs transition-all active:scale-95" title="Copy Share Link">
                                 <Globe class="w-4 h-4" />
                             </button>
-                            <Link :href="route('meeting.join', meeting.room_id)" 
+                            <Link :href="route('meeting.join', meeting.room_id)"
                                   class="flex items-center gap-2 px-6 py-2.5 bg-white/5 hover:bg-blue-600 text-slate-300 hover:text-white rounded-xl font-black text-xs transition-all active:scale-95">
                                 Join Now
                                 <ArrowRight class="w-4 h-4" />
@@ -228,11 +237,11 @@ const toggleRole = (role: string) => {
         </div>
 
         <!-- Floating Action Button for Recordings -->
-        <Link :href="route('meetings.recordings')" 
+        <!-- <Link :href="route('meetings.recordings')"
               class="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-2xl shadow-blue-600/30 transition-all hover:-translate-y-1 active:scale-95 group border border-blue-400/20">
             <Video class="w-5 h-5 group-hover:scale-110 transition-transform" />
             <span class="font-black text-sm tracking-tight">Recordings</span>
-        </Link>
+        </Link> -->
 
         <!-- Create/Edit Meeting Modal -->
         <Modal :show="showBoardModal" :title="boardForm.id ? 'Edit Meeting' : 'Schedule Meeting'" @close="showBoardModal = false">
@@ -279,7 +288,7 @@ const toggleRole = (role: string) => {
                                    class="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all" required>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-center mt-4 sm:mt-6">
                         <label class="flex items-center gap-3 cursor-pointer">
                             <div class="relative">
