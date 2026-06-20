@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import Card from '@/components/Card.vue';
 import {
   Send,
   AlertCircle,
@@ -180,12 +179,12 @@ const getInputType = (fieldType: string) => {
 
       <!-- Form Fields -->
       <form @submit.prevent="handleSubmit" v-if="form.is_active">
-        <Card class="mb-6">
+        <div class="mb-6">
           <div class="space-y-6">
             <div
               v-for="(field, index) in fields"
               :key="index"
-              class="pb-4 last:pb-0 border-b border-slate-800 last:border-0"
+              class="pb-4 last:pb-0"
             >
               <div class="mb-2">
                 <label class="block text-white font-medium mb-1">
@@ -203,7 +202,7 @@ const getInputType = (fieldType: string) => {
                   :placeholder="field.placeholder"
                   :required="field.required"
                   rows="4"
-                  class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none"
+                  class="w-full px-4 py-2 bg-slate-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
 
                 <!-- Checkbox with options -->
@@ -213,7 +212,7 @@ const getInputType = (fieldType: string) => {
                       type="checkbox"
                       :value="option"
                       v-model="formData[field.name]"
-                      class="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500"
+                      class="rounded bg-slate-900 border-transparent text-blue-500 focus:ring-blue-500"
                     />
                     <span class="text-slate-300">{{ option }}</span>
                   </label>
@@ -224,7 +223,7 @@ const getInputType = (fieldType: string) => {
                   <input
                     type="checkbox"
                     v-model="formData[field.name]"
-                    class="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500"
+                    class="rounded bg-slate-900 border-transparent text-blue-500 focus:ring-blue-500"
                   />
                   <span class="text-slate-300">Yes</span>
                 </label>
@@ -237,18 +236,17 @@ const getInputType = (fieldType: string) => {
                       :value="option"
                       v-model="formData[field.name]"
                       :name="field.name"
-                      class="bg-slate-900 border-slate-700 text-blue-500 focus:ring-blue-500"
+                      class="bg-slate-900 border-transparent text-blue-500 focus:ring-blue-500"
                     />
                     <span class="text-slate-300">{{ option }}</span>
                   </label>
                 </div>
 
-                <!-- Select dropdown -->
                 <select
                   v-else-if="field.type === 'select'"
                   v-model="formData[field.name]"
                   :required="field.required"
-                  class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  class="w-full px-4 py-2 bg-slate-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select an option</option>
                   <option v-for="(option, optIdx) in field.options" :key="optIdx" :value="option">
@@ -263,7 +261,7 @@ const getInputType = (fieldType: string) => {
                     :accept="field.type === 'image' ? 'image/*' : '*/*'"
                     @change="(e) => handleFileChange(field.name, e)"
                     :required="field.required"
-                    class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                    class="w-full px-4 py-2 bg-slate-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   />
                 </div>
 
@@ -280,16 +278,15 @@ const getInputType = (fieldType: string) => {
                     :placeholder="field.placeholder"
                     :required="field.required"
                     :step="field.type === 'number' ? 'any' : undefined"
-                    :class="`w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 ${getFieldIcon(field.type) ? 'pl-10' : ''}`"
+                    :class="`w-full px-4 py-2 bg-slate-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 ${getFieldIcon(field.type) ? 'pl-10' : ''}`"
                   />
                 </div>
-              </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         <!-- Email Notification -->
-        <Card class="mb-6">
+        <div class="mb-6">
           <div>
             <label class="block text-white font-medium mb-2">
               Email Confirmation (Optional)
@@ -303,11 +300,11 @@ const getInputType = (fieldType: string) => {
                 v-model="submitForm.email_to_notify"
                 type="email"
                 placeholder="your@email.com"
-                class="w-full px-4 py-2 pl-10 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                class="w-full px-4 py-2 pl-10 bg-slate-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
-        </Card>
+        </div>
 
         <!-- Submit Button -->
         <div class="flex justify-end">
