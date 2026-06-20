@@ -39,6 +39,9 @@ class FormSubmissionNotification extends Mailable
     {
         return new Content(
             view: 'emails.form-submission-notification',
+            with: [
+                'url' => url('/forms/' . $this->form->id),
+            ],
         );
     }
 
