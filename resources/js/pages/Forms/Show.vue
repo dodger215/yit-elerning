@@ -143,7 +143,10 @@ const getInputType = (fieldType: string) => {
 </script>
 
 <template>
-  <AppLayout>
+  <component 
+    :is="$page.props.auth?.user ? AppLayout : 'div'"
+    :class="!$page.props.auth?.user ? 'min-h-screen bg-[#0a0c10] text-slate-200' : ''"
+  >
     <Head :title="form.title" />
 
     <div class="max-w-3xl mx-auto py-12 px-4">
@@ -327,5 +330,5 @@ const getInputType = (fieldType: string) => {
         <p class="text-slate-400">This form is no longer accepting submissions.</p>
       </div>
     </div>
-  </AppLayout>
+  </component>
 </template>

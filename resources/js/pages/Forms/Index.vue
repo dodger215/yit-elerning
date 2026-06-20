@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Card from '@/components/Card.vue';
@@ -9,7 +10,9 @@ import {
   BarChart3,
   Calendar,
   Users,
-  GraduationCap
+  GraduationCap,
+  Share2,
+  Check
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -29,6 +32,19 @@ const props = defineProps<{
     links: any[];
   };
 }>();
+
+const copiedId = ref<string | null>(null);
+
+const copyFormLink = async (id: string) => {
+  const url = `${window.location.origin}/forms/${id}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    copiedId.value = id;
+    setTimeout(() => { copiedId.value = null; }, 2000);
+  } catch (err) {
+    console.error('Failed to copy', err);
+  }
+};
 </script>
 
 <template>
@@ -127,6 +143,14 @@ const props = defineProps<{
               >
                 <BarChart3 class="w-5 h-5" />
               </Link>
+              <button
+                @click="copyFormLink(form.id)"
+                class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition active:scale-[0.98]"
+                title="Copy Form Link"
+              >
+                <Check v-if="copiedId === form.id" class="w-5 h-5 text-green-400" />
+                <Share2 v-else class="w-5 h-5 text-slate-300" />
+              </button>
             </div>
           </div>
         </div>
