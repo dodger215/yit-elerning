@@ -36,6 +36,7 @@ const props = defineProps<{
     title: string;
     description: string;
     fields: string; // JSON string
+    form_type: string;
   };
   submissions: {
     data: Submission[];
@@ -123,9 +124,9 @@ const getFieldLabel = (fieldName: string) => {
               <tr class="bg-slate-800/50 border-b border-slate-800">
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">User</th>
                 <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Submitted At</th>
-                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Grade</th>
-                <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                <th v-if="form.form_type !== 'general'" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                <th v-if="form.form_type !== 'general'" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Grade</th>
+                <th v-if="form.form_type !== 'general'" class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800">
@@ -140,12 +141,19 @@ const getFieldLabel = (fieldName: string) => {
                       <User class="w-5 h-5" />
                     </div>
                     <div>
-                      <div class="text-white font-medium">
-                        {{ submission.user ? `${submission.user.first_name} ${submission.user.last_name}` : 'Anonymous' }}
-                      </div>
-                      <div class="text-slate-500 text-xs">
-                        {{ submission.user ? submission.user.email : (submission.email_to_notify || 'No email') }}
-                      </div>
+                      <template v-if="form.form_type === 'general'">
+                        <div class="text-white font-medium">
+                          {{ submission.user ? submission.user.email : (submission.email_to_notify || 'Anonymous') }}
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="text-white font-medium">
+                          {{ submission.user ? `${submission.user.first_name} ${submission.user.last_name}` : 'Anonymous' }}
+                        </div>
+                        <div class="text-slate-500 text-xs">
+                          {{ submission.user ? submission.user.email : (submission.email_to_notify || 'No email') }}
+                        </div>
+                      </template>
                     </div>
                   </div>
                 </td>
@@ -155,7 +163,7 @@ const getFieldLabel = (fieldName: string) => {
                     <span class="text-slate-500 text-xs">{{ new Date(submission.created_at).toLocaleTimeString() }}</span>
                   </div>
                 </td>
-                <td class="px-6 py-4">
+                <td v-if="form.form_type !== 'general'" class="px-6 py-4">
                   <span
                     v-if="submission.grade"
                     class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-400 text-xs font-medium border border-green-500/20"
@@ -171,10 +179,10 @@ const getFieldLabel = (fieldName: string) => {
                     Pending
                   </span>
                 </td>
-                <td class="px-6 py-4 text-white font-bold">
+                <td v-if="form.form_type !== 'general'" class="px-6 py-4 text-white font-bold">
                   {{ submission.grade || '-' }}
                 </td>
-                <td class="px-6 py-4 text-right">
+                <td v-if="form.form_type !== 'general'" class="px-6 py-4 text-right">
                   <button
                     @click="openGradingModal(submission)"
                     class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition"
@@ -182,9 +190,17 @@ const getFieldLabel = (fieldName: string) => {
                     View & Grade
                   </button>
                 </td>
+                <td v-else class="px-6 py-4 text-right">
+                  <button
+                    @click="openGradingModal(submission)"
+                    class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition"
+                  >
+                    View Details
+                  </button>
+                </td>
               </tr>
               <tr v-if="submissions.data.length === 0">
-                <td colspan="5" class="px-6 py-12 text-center text-slate-500 italic">
+                <td :colspan="form.form_type === 'general' ? 3 : 5" class="px-6 py-12 text-center text-slate-500 italic">
                   No submissions yet.
                 </td>
               </tr>
@@ -218,7 +234,7 @@ const getFieldLabel = (fieldName: string) => {
         </div>
 
         <!-- Modal Content -->
-        <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 gap-8" :class="form.form_type !== 'general' ? 'lg:grid-cols-2' : ''">
           <!-- Submission Data -->
           <div>
             <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -242,7 +258,7 @@ const getFieldLabel = (fieldName: string) => {
           </div>
 
           <!-- Grading Section -->
-          <div class="bg-slate-800/30 p-6 rounded-2xl border border-blue-500/10">
+          <div v-if="form.form_type !== 'general'" class="bg-slate-800/30 p-6 rounded-2xl border border-blue-500/10">
             <h4 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <CheckCircle2 class="w-4 h-4" />
               Marking & Feedback

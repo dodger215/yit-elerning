@@ -121,7 +121,7 @@ class FormController extends Controller
         ]);
 
         if ($formData->email_to_notify) {
-            // mail notification logic
+            Mail::to($formData->email_to_notify)->send(new \App\Mail\FormSubmissionNotification($form));
         }
 
         return Inertia::render('Forms/Submit', [
