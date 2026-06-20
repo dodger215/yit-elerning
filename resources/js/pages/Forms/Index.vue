@@ -12,7 +12,8 @@ import {
   Users,
   GraduationCap,
   Share2,
-  Check
+  Check,
+  Pencil
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -142,6 +143,14 @@ const copyFormLink = async (id: string) => {
                 title="View Submissions"
               >
                 <BarChart3 class="w-5 h-5" />
+              </Link>
+              <Link
+                v-if="!$page.props.auth.user.roles.includes('regular')"
+                :href="`/forms/${form.id}/edit`"
+                class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-white transition active:scale-[0.98]"
+                title="Edit Form"
+              >
+                <Pencil class="w-5 h-5 text-slate-300" />
               </Link>
               <button
                 @click="copyFormLink(form.id)"

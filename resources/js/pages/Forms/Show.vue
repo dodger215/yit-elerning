@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Head, useForm, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import {
   Send,
@@ -58,10 +58,8 @@ const initializeFormData = () => {
 
 initializeFormData();
 
-const submitForm = useForm({
-  email_to_notify: '',
-  data: {} as string
-});
+const isSubmitting = ref(false);
+const emailToNotify = ref('');
 
 const handleFileChange = (fieldName: string, event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -72,17 +70,16 @@ const handleFileChange = (fieldName: string, event: Event) => {
 };
 
 const handleSubmit = () => {
+  isSubmitting.value = true;
   // Prepare data for submission
   const submissionData = JSON.stringify(formData.value);
-
-  submitForm.data = submissionData;
 
   // For file uploads, we need FormData
   const hasFiles = Object.keys(fileInputs.value).length > 0;
 
   if (hasFiles) {
     const formDataObj = new FormData();
-    formDataObj.append('email_to_notify', submitForm.email_to_notify);
+    formDataObj.append('email_to_notify', emailToNotify.value);
     formDataObj.append('data', submissionData);
 
     // Append files
@@ -92,18 +89,27 @@ const handleSubmit = () => {
       }
     });
 
-    submitForm.post(`/forms/${props.form.id}/submit`, {
+    router.post(`/forms/${props.form.id}/submit`, formDataObj, {
       forceFormData: true,
       onSuccess: () => {
         // Reset form
         initializeFormData();
         fileInputs.value = {};
+      },
+      onFinish: () => {
+        isSubmitting.value = false;
       }
     });
   } else {
-    submitForm.post(`/forms/${props.form.id}/submit`, {
+    router.post(`/forms/${props.form.id}/submit`, {
+      email_to_notify: emailToNotify.value,
+      data: submissionData
+    }, {
       onSuccess: () => {
         initializeFormData();
+      },
+      onFinish: () => {
+        isSubmitting.value = false;
       }
     });
   }
@@ -301,7 +307,7 @@ const getInputType = (fieldType: string) => {
             <div class="relative">
               <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
-                v-model="submitForm.email_to_notify"
+                v-model="emailToNotify"
                 type="email"
                 placeholder="your@email.com"
                 class="w-full px-4 py-2 pl-10 bg-slate-900 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -314,11 +320,11 @@ const getInputType = (fieldType: string) => {
         <div class="flex justify-end">
           <button
             type="submit"
-            :disabled="submitForm.processing"
+            :disabled="isSubmitting"
             class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition disabled:opacity-50"
           >
             <Send class="w-4 h-4" />
-            {{ submitForm.processing ? 'Submitting...' : 'Submit Response' }}
+            {{ isSubmitting ? 'Submitting...' : 'Submit Response' }}
           </button>
         </div>
       </form>

@@ -186,4 +186,49 @@ class FormController extends Controller
 
         return redirect()->back()->with('success', 'Form status updated.');
     }
+
+    public function editForm($formId)
+    {
+        $form = Forms::findOrFail($formId);
+
+        if ($form->by !== Auth::id() && ! Auth::user()->hasRole('supervisor')) {
+            abort(403);
+        }
+
+        $courses = Course::select('id', 'title')->get();
+
+        return Inertia::render('Forms/Edit', [
+            'form' => $form,
+            'courses' => $courses,
+        ]);
+    }
+
+    public function updateForm(Request $request, $formId)
+    {
+        $form = Forms::findOrFail($formId);
+
+        if ($form->by !== Auth::id() && ! Auth::user()->hasRole('supervisor')) {
+            abort(403);
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'fields' => 'required', // json or array depending on how it's sent
+            'form_type' => 'required|in:general,course_assignment',
+            'course_id' => 'required_if:form_type,course_assignment|nullable|exists:courses,id',
+            'cohort' => 'nullable|string',
+        ]);
+
+        $form->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'fields' => is_string($request->fields) ? $request->fields : json_encode($request->fields),
+            'form_type' => $request->form_type,
+            'course_id' => $request->course_id,
+            'cohort' => $request->cohort,
+        ]);
+
+        return redirect()->route('forms.index')->with('success', 'Form updated successfully!');
+    }
 }

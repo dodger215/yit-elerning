@@ -28,6 +28,7 @@ const props = defineProps<{
           Return to Home
         </Link>
         <Link
+          v-if="$page.props.auth?.user"
           href="/forms"
           class="block w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-medium transition"
         >

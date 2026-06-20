@@ -143,6 +143,8 @@ Route::middleware(['auth'])->prefix('forms')->group(function () {
     Route::post('/create', [FormController::class, 'storeForm'])->name('forms.store');
     Route::get('/{form}/submissions', [FormController::class, 'submissions'])->name('forms.submissions');
     Route::post('/submissions/{submission}/grade', [FormController::class, 'gradeSubmission'])->name('forms.grade');
+    Route::get('/{form}/edit', [FormController::class, 'editForm'])->name('forms.edit');
+    Route::put('/{form}', [FormController::class, 'updateForm'])->name('forms.update');
 });
 
 Route::get('forms/{form}', [FormController::class, 'showForm'])->name('forms.show');
