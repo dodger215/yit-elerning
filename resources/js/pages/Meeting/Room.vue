@@ -595,16 +595,7 @@ onUnmounted(() => {
             <div v-if="!isMinimized" class="absolute inset-0">
                 <div ref="jitsiContainer" class="w-full h-full"></div>
 
-                <!-- Minimize Button -->
-                <button
-                    @click="minimizeMeeting"
-                    class="absolute bottom-4 right-4 z-50 bg-slate-900/90 backdrop-blur-md hover:bg-slate-800 rounded-full p-2 shadow-lg transition-all border border-white/10 group"
-                    title="Minimize meeting"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300 group-hover:text-white">
-                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
-                    </svg>
-                </button>
+
 
                 <!-- Error State -->
                 <div v-if="error" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950">
