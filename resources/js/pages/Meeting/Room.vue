@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import PageLoader from '@/Components/PageLoader.vue';
 
@@ -49,17 +49,17 @@ const playNotificationSound = () => {
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
-        
+
         oscillator.type = 'sine';
         oscillator.frequency.setValueAtTime(600, audioCtx.currentTime); // 600 Hz
         oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
-        
+
         gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        
+
         oscillator.start();
         oscillator.stop(audioCtx.currentTime + 0.3);
     } catch (e) {
@@ -74,6 +74,78 @@ const broadcastToParticipants = (msgType: string, payload: any = {}) => {
     participants.forEach((p: any) => {
         api.value.executeCommand('sendEndpointTextMessage', p.participantId, msg);
     });
+};
+
+// Custom Chat State
+const isChatOpen = ref(false);
+const chatMessages = ref<any[]>([]);
+const newChatMessage = ref('');
+const unreadChatCount = ref(0);
+const chatContainerRef = ref<HTMLElement | null>(null);
+
+const scrollToBottom = async () => {
+    await nextTick();
+    if (chatContainerRef.value) {
+        chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
+    }
+};
+
+const fetchChatHistory = async () => {
+    try {
+        const response = await fetch(route('meeting.chat.index', props.meeting.room_id));
+        if (response.ok) {
+            const data = await response.json();
+            chatMessages.value = data.messages || [];
+            scrollToBottom();
+        }
+    } catch (e) {
+        console.error("Failed to load chat history", e);
+    }
+};
+
+const sendChatMessage = async () => {
+    if (!newChatMessage.value.trim()) return;
+    
+    const text = newChatMessage.value.trim();
+    newChatMessage.value = ''; // Optimistically clear input
+
+    const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
+    
+    try {
+        const response = await fetch(route('meeting.chat.store', props.meeting.room_id), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(token || ''),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                sender_name: props.participantName,
+                text: text,
+                is_host: props.isHost || false
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            chatMessages.value.push(data.message);
+            scrollToBottom();
+            
+            // Broadcast to other participants via Jitsi Data Channels so they see it instantly
+            broadcastToParticipants('CUSTOM_CHAT_MESSAGE', { message: data.message });
+        }
+    } catch (e) {
+        console.error("Failed to send chat message", e);
+        showToast('Failed to send message', 'error');
+    }
+};
+
+const toggleChat = () => {
+    isChatOpen.value = !isChatOpen.value;
+    if (isChatOpen.value) {
+        unreadChatCount.value = 0;
+        scrollToBottom();
+    }
 };
 
 // Minimization functions
@@ -175,7 +247,7 @@ const startRecording = async () => {
 
         videoRecorder = new MediaRecorder(videoStream, { mimeType: videoMimeType });
         audioRecorder = new MediaRecorder(audioStream, { mimeType: audioMimeType });
-        
+
         videoChunks = [];
         audioChunks = [];
 
@@ -197,7 +269,7 @@ const startRecording = async () => {
         audioRecorder.onstop = async () => {
             const audioBlob = new Blob(audioChunks, { type: audioMimeType });
             uploadPromises.push(uploadRecording(audioBlob, 'audio'));
-            
+
             // Wait for both to finish uploading
             try {
                 await Promise.all(uploadPromises);
@@ -208,7 +280,7 @@ const startRecording = async () => {
             if (displayStreamRef) displayStreamRef.getTracks().forEach(track => track.stop());
             if (voiceStreamRef) voiceStreamRef.getTracks().forEach(track => track.stop());
             if (audioContextRef && audioContextRef.state !== 'closed') audioContextRef.close();
-            
+
             displayStreamRef = null;
             voiceStreamRef = null;
             audioContextRef = null;
@@ -221,7 +293,7 @@ const startRecording = async () => {
         videoRecorder.start();
         audioRecorder.start();
         isRecording.value = true;
-        
+
         showToast('This meeting is being recorded.', 'error');
         playNotificationSound();
         broadcastToParticipants('RECORDING_STARTED');
@@ -250,12 +322,12 @@ const uploadRecording = async (blob: Blob, type: 'video' | 'audio') => {
 
     try {
         const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
-        
+
         for (let i = 0; i < totalChunks; i++) {
             const start = i * CHUNK_SIZE;
             const end = Math.min(start + CHUNK_SIZE, blob.size);
             const chunk = blob.slice(start, end);
-            
+
             const formData = new FormData();
             formData.append('recording', chunk, `meeting-${props.meeting.id}-recording.${extension}`);
             formData.append('chunk_index', i.toString());
@@ -276,7 +348,7 @@ const uploadRecording = async (blob: Blob, type: 'video' | 'audio') => {
                 throw new Error(errData.message || 'Upload failed');
             }
         }
-        
+
         if (type === 'video') {
             showToast('Video recording uploaded successfully!', 'info');
         }
@@ -388,6 +460,14 @@ const initJitsi = async () => {
                             showToast('This meeting is being recorded.', 'error');
                             playNotificationSound();
                         }
+                    } else if (data.type === 'CUSTOM_CHAT_MESSAGE') {
+                        chatMessages.value.push(data.message);
+                        if (!isChatOpen.value) {
+                            unreadChatCount.value++;
+                            playNotificationSound();
+                        } else {
+                            scrollToBottom();
+                        }
                     }
                 } catch (e) {
                     console.log('Message received:', event);
@@ -433,6 +513,7 @@ const copyShareLink = () => {
 
 onMounted(() => {
     initJitsi();
+    fetchChatHistory();
 });
 
 onUnmounted(() => {
@@ -623,6 +704,86 @@ onUnmounted(() => {
                         </svg>
                     </button>
                 </div>
+            </div>
+
+            <!-- Custom Chat UI -->
+            <div class="fixed bottom-6 left-6 z-[9999] max-h-[32rem] flex flex-col items-start pointer-events-none">
+                <!-- Chat Modal -->
+                <div 
+                    v-show="isChatOpen" 
+                    class="pointer-events-auto w-80 sm:w-96 h-[32rem] bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4 transition-all duration-300 origin-bottom-left"
+                    :class="isChatOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'"
+                >
+                    <!-- Header -->
+                    <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-slate-800/50">
+                        <div class="flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <h3 class="font-bold text-white text-sm">Meeting Chat</h3>
+                        </div>
+                        <button @click="toggleChat" class="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Messages list -->
+                    <div ref="chatContainerRef" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                        <div v-if="chatMessages.length === 0" class="text-center text-slate-500 text-xs mt-10">
+                            No messages yet. Start the conversation!
+                        </div>
+                        <div v-for="msg in chatMessages" :key="msg.id" class="flex flex-col gap-1" :class="msg.sender_name === participantName ? 'items-end' : 'items-start'">
+                            <div class="flex items-baseline gap-2" :class="msg.sender_name === participantName ? 'flex-row-reverse' : ''">
+                                <span class="text-[10px] font-bold" :class="msg.is_host ? 'text-yellow-500' : 'text-slate-400'">{{ msg.sender_name }}</span>
+                                <span class="text-[8px] text-slate-600">{{ new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
+                            </div>
+                            <div 
+                                class="px-3 py-2 rounded-2xl max-w-[85%] text-sm"
+                                :class="msg.sender_name === participantName ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 border border-white/5 rounded-tl-sm'"
+                            >
+                                {{ msg.text }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input area -->
+                    <form @submit.prevent="sendChatMessage" class="p-3 bg-slate-950/50 border-t border-white/5 flex gap-2">
+                        <input 
+                            v-model="newChatMessage" 
+                            type="text" 
+                            placeholder="Type a message..." 
+                            class="flex-1 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                        />
+                        <button 
+                            type="submit" 
+                            :disabled="!newChatMessage.trim()"
+                            class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl px-3 py-2 transition flex items-center justify-center"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Floating Button -->
+                <button 
+                    @click="toggleChat"
+                    class="pointer-events-auto flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/30 transition transform hover:scale-105 active:scale-95 border border-blue-400/20 relative"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    
+                    <!-- Unread badge -->
+                    <span v-if="unreadChatCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-900 shadow-md animate-bounce">
+                        {{ unreadChatCount > 9 ? '9+' : unreadChatCount }}
+                    </span>
+                </button>
             </div>
         </main>
     </div>

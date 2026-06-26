@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\InstructorManagementController;
 use App\Http\Controllers\InviteController;
+use App\Http\Controllers\MeetingChatController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
@@ -62,6 +63,10 @@ Route::prefix('auth')->group(function () {
 Route::get('/meeting/{room_id}', [MeetingController::class, 'join'])->name('meeting.join');
 Route::get('/meeting/{room_id}/ended', [MeetingController::class, 'ended'])->name('meeting.ended');
 Route::get('/meetings/recordings/{file}', [MeetingController::class, 'downloadRecording'])->name('meetings.download-recording');
+
+// Meeting Chat Routes
+Route::get('/meeting/{room_id}/chat', [MeetingChatController::class, 'index'])->name('meeting.chat.index');
+Route::post('/meeting/{room_id}/chat', [MeetingChatController::class, 'store'])->name('meeting.chat.store');
 
 // Protected Routes
 Route::middleware(['auth'])->group(function () {
