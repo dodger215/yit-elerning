@@ -105,12 +105,12 @@ const fetchChatHistory = async () => {
 
 const sendChatMessage = async () => {
     if (!newChatMessage.value.trim()) return;
-    
+
     const text = newChatMessage.value.trim();
     newChatMessage.value = ''; // Optimistically clear input
 
     const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))?.split('=')[1];
-    
+
     try {
         const response = await fetch(route('meeting.chat.store', props.meeting.room_id), {
             method: 'POST',
@@ -130,7 +130,7 @@ const sendChatMessage = async () => {
             const data = await response.json();
             chatMessages.value.push(data.message);
             scrollToBottom();
-            
+
             // Broadcast to other participants via Jitsi Data Channels so they see it instantly
             broadcastToParticipants('CUSTOM_CHAT_MESSAGE', { message: data.message });
         }
@@ -659,7 +659,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Hover Controls -->
-                <div class="absolute bottom-0 left-0 right-0 flex justify-center gap-2 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <!-- <div class="absolute bottom-0 left-0 right-0 flex justify-center gap-2 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200">
                     <button
                         @click.stop="togglePreviewMute"
                         class="bg-slate-800/90 backdrop-blur-md rounded-full p-2 hover:bg-slate-700 transition transform hover:scale-110"
@@ -704,13 +704,13 @@ onUnmounted(() => {
                         </svg>
                     </button>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Custom Chat UI -->
             <div class="fixed bottom-6 left-6 z-[9999] max-h-[32rem] flex flex-col items-start pointer-events-none">
                 <!-- Chat Modal -->
-                <div 
-                    v-show="isChatOpen" 
+                <div
+                    v-show="isChatOpen"
                     class="pointer-events-auto w-80 sm:w-96 h-[32rem] bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden mb-4 transition-all duration-300 origin-bottom-left"
                     :class="isChatOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'"
                 >
@@ -740,7 +740,7 @@ onUnmounted(() => {
                                 <span class="text-[10px] font-bold" :class="msg.is_host ? 'text-yellow-500' : 'text-slate-400'">{{ msg.sender_name }}</span>
                                 <span class="text-[8px] text-slate-600">{{ new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}</span>
                             </div>
-                            <div 
+                            <div
                                 class="px-3 py-2 rounded-2xl max-w-[85%] text-sm"
                                 :class="msg.sender_name === participantName ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-slate-800 text-slate-200 border border-white/5 rounded-tl-sm'"
                             >
@@ -751,14 +751,14 @@ onUnmounted(() => {
 
                     <!-- Input area -->
                     <form @submit.prevent="sendChatMessage" class="p-3 bg-slate-950/50 border-t border-white/5 flex gap-2">
-                        <input 
-                            v-model="newChatMessage" 
-                            type="text" 
-                            placeholder="Type a message..." 
+                        <input
+                            v-model="newChatMessage"
+                            type="text"
+                            placeholder="Type a message..."
                             class="flex-1 bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
                         />
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             :disabled="!newChatMessage.trim()"
                             class="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl px-3 py-2 transition flex items-center justify-center"
                         >
@@ -771,14 +771,14 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Floating Button -->
-                <button 
+                <button
                     @click="toggleChat"
                     class="pointer-events-auto flex items-center justify-center w-14 h-14 bg-blue-600 hover:bg-blue-500 text-white rounded-full shadow-lg shadow-blue-500/30 transition transform hover:scale-105 active:scale-95 border border-blue-400/20 relative"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
-                    
+
                     <!-- Unread badge -->
                     <span v-if="unreadChatCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-900 shadow-md animate-bounce">
                         {{ unreadChatCount > 9 ? '9+' : unreadChatCount }}
