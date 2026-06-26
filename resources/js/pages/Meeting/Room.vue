@@ -703,8 +703,8 @@ onUnmounted(() => {
                             <path d="m2 2 20 20"/>
                         </svg>
                     </button>
-                </div>
-            </div> -->
+                </div> -->
+            </div>
 
             <!-- Custom Chat UI -->
             <div class="fixed bottom-6 left-6 z-[9999] max-h-[32rem] flex flex-col items-start pointer-events-none">
