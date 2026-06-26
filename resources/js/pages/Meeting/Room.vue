@@ -707,7 +707,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Custom Chat UI -->
-            <div class="fixed bottom-6 left-6 z-[9999] max-h-[32rem] flex flex-col items-start pointer-events-none">
+            <div class="fixed bottom-10 left-6 z-[9999] max-h-[32rem] flex flex-col items-start pointer-events-none">
                 <!-- Chat Modal -->
                 <div
                     v-show="isChatOpen"
